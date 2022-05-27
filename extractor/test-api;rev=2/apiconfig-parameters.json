@@ -1,0 +1,22 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "apimServiceName": {
+      "value": "ainaba-apiprod"
+    },
+    "linkedTemplatesBaseUrl": {
+      "value": "https://account.blob.core.windows.net/container/"
+    },
+    "linkedTemplatesSasToken": {
+      "value": "?sastoken=goeshere&type=linkedTemplate"
+    },
+    "policyXMLBaseUrl": {
+      "value": "https://account.blob.core.windows.net/container/policies/"
+    },
+    "policyXMLSasToken": {
+      "value": "?sastoken=goeshere&type=policyXml"
+    }
+  },
+  "resources": []
+}
