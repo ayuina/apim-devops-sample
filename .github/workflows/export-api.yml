@@ -31,7 +31,6 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }} 
 
       - name: 'Shell'
-        env:
         run: |
           reskitUrl="https://github.com/Azure/azure-api-management-devops-resource-kit/releases/download/${reskitVersion}/reskit-${reskitVersion}.zip"
           curl -o reskit.zip -L ${reskitUrl}
