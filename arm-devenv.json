@@ -14,6 +14,13 @@
         "description": "Name of the Storage Account"
       }
     },
+    "backupContainerName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of container for backup api management"
+      },
+      "defaultValue": "apim-backup"
+    },
     "apimServiceName": {
       "type": "string",
       "metadata": {
@@ -49,6 +56,14 @@
         "name": "Standard_LRS",
         "tier": "Standard"
       }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2021-09-01",
+      "name": "[format('{0}/default/{1}', parameters('storageAccountName'), parameters('backupContainerName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ]
     },
     {
       "apiVersion": "2021-08-01",

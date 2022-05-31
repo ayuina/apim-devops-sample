@@ -1,0 +1,16 @@
+{
+    "resourceGroup": "source-apim-resource-group",
+    "sourceApimName" : "apim-name-export-from",
+    "destinationApimName": "apim-name-import-to-dummy",
+    "fileFolder" : "./echo-api",
+
+    "apiName" : "echo-api",
+    "includeAllRevisions" : true,
+    "baseFileName" : "apiconfig",
+
+    "linkedTemplatesBaseUrl" : "https://account.blob.core.windows.net/container/",
+    "linkedTemplatesSasToken": "?sastoken=goeshere&type=linkedTemplate",
+
+    "policyXMLBaseUrl":  "https://account.blob.core.windows.net/container/policies/",
+    "policyXMLSasToken": "?sastoken=goeshere&type=policyXml"
+}

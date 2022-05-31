@@ -14,16 +14,30 @@
         "description": "Name of the API Management"
       }
     },
+    "publisherEmail": {
+      "type": "string",
+      "defaultValue": "hoge@contoso.com",
+      "metadata": {
+        "description": "publisher email"
+      }
+    },
+    "publisherName": {
+      "type": "string",
+      "defaultValue": "hoge, contoso",
+      "metadata": {
+        "description": "publisher name"
+      }
+    },
     "storageAccountName": {
       "type": "string",
       "metadata": {
         "description": "Name of the Storage Account"
       }
     },
-    "storageBaseUrl": {
+    "linkedTemplateContainerName": {
       "type": "string",
       "metadata": {
-        "description": "base url of storge ex) https://account.blob.core.windows.net/container/"
+        "description": "Name of container for linkedTemplate"
       },
       "defaultValue": ""
     },
@@ -58,8 +72,8 @@
   },
   "variables": {
       "deployApiConfig":"[and(not(empty(parameters('targetApiName'))), not(empty(parameters('targetApiRevision'))))]",
-      "linkedTemplatesBaseUrl": "[concat(parameters('storageBaseUrl'), parameters('targetApiName'), ';rev=', parameters('targetApiRevision'),'/')]",
-      "policyXMLBaseUrl": "[concat(parameters('storageBaseUrl'), parameters('targetApiName'), ';rev=', parameters('targetApiRevision'),'/policies/')]"
+      "linkedTemplatesBaseUrl": "[format('https://{0}.blob.core.windows.net/{1}/', parameters('storageAccountName'), parameters('linkedTemplateContainerName'))]",
+      "policyXMLBaseUrl": "[format('https://{0}.blob.core.windows.net/{1}/policies/', parameters('storageAccountName'), parameters('linkedTemplateContainerName'))]"
   },
   "resources": [
     {
@@ -73,7 +87,6 @@
         "tier": "Standard"
       }
     },
-
     {
       "apiVersion": "2021-08-01",
       "name": "[parameters('apimServiceName')]",
@@ -81,8 +94,8 @@
       "tags": {},
       "location": "[parameters('location')]",
       "properties": {
-        "publisherEmail": "ayumu.inaba@live.com",
-        "publisherName": "ainaba",
+        "publisherEmail": "[parameters('publisherEmail')]",
+        "publisherName": "[parameters('publisherName')]",
         "customProperties": {
           "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls11": "false",
           "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls10": "false",
@@ -110,7 +123,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('linkedTemplatesBaseUrl'), parameters('baseFileName'), '-master.template.json', parameters('storageSasToken'))]",
+          "uri": "[format('{0}{1}-master.template.json{2}', variables('linkedTemplatesBaseUrl'), parameters('baseFileName'), parameters('storageSasToken'))]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
