@@ -1,0 +1,107 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "apimServiceName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the API Management"
+      }
+    },
+    "storageBaseUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "base url of storge ex) https://account.blob.core.windows.net/container/"
+      }
+
+    },
+    "storageSasToken": {
+      "type": "string",
+      "metadata": {
+        "description": "container level sas token ex) ?sv=....&st=....&se=....&sr=c$sp=r&sig=...."
+      }
+
+    },
+    "baseFileName": {
+      "type": "string",
+      "metadata": {
+        "description": "basefilename when extracted"
+      }
+    },
+    "targetApiName": {
+      "type": "string",
+      "metadata": {
+        "description": "target api name to import"
+      }
+    },
+    "targetApiRevision": {
+      "type": "string",
+      "metadata": {
+        "description": "target revision of api to import"
+      }
+    }
+  },
+  "variables": {
+      "linkedTemplatesBaseUrl": "[concat(parameters('storageBaseUrl'), parameters('targetApiName'), ';rev=', parameters('targetApiRevision'),'/')]",
+      "policyXMLBaseUrl": "[concat(parameters('storageBaseUrl'), parameters('targetApiName'), ';rev=', parameters('targetApiRevision'),'/policies/')]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2021-08-01",
+      "name": "[parameters('apimServiceName')]",
+      "type": "Microsoft.ApiManagement/service",
+      "tags": {},
+      "location": "japaneast",
+      "properties": {
+        "publisherEmail": "ayumu.inaba@live.com",
+        "publisherName": "ainaba",
+        "customProperties": {
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls11": "false",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls10": "false",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Tls11": "false",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Tls10": "false",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Ssl30": "false",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Protocols.Server.Http2": "false",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Ciphers.TripleDes168": "false",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Ssl30": "false"
+        }
+      },
+      "sku": {
+        "name": "Developer",
+        "capacity": 1
+      }
+    },
+    {
+      "apiVersion": "2022-01-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "apiMasterTemplate",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', parameters('apimServiceName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('linkedTemplatesBaseUrl'), parameters('baseFileName'), '-master.template.json', parameters('storageSasToken'))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "apimServiceName": {
+            "value": "[parameters('apimServiceName')]"
+          },
+          "linkedTemplatesBaseUrl": {
+            "value": "[variables('linkedTemplatesBaseUrl')]"
+          },
+          "linkedTemplatesSasToken": {
+            "value": "[parameters('storageSasToken')]"
+          },
+          "policyXMLBaseUrl": {
+            "value": "[variables('policyXMLBaseUrl')]"
+          },
+          "policyXMLSasToken": {
+            "value": "[parameters('storageSasToken')]"
+          }
+        }
+      }
+    }
+  ]
+}
