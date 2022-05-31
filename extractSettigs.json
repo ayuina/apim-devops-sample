@@ -1,7 +1,7 @@
 {
     "resourceGroup": "apim-demo-dev-rg",
-    "sourceApimName" : "ainaba-apim-dev",
-    "destinationApimName": "ainaba-apim-prod",
+    "sourceApimName" : "apim-name-export-from",
+    "destinationApimName": "apim-name-import-to",
     "fileFolder" : "extractor",
 
     "linkedTemplatesBaseUrl" : "https://account.blob.core.windows.net/container/",
@@ -10,7 +10,7 @@
     "policyXMLBaseUrl":  "https://account.blob.core.windows.net/container/policies/",
     "policyXMLSasToken": "?sastoken=goeshere&type=policyXml",
 
-    "apiName" : "test-api",
+    "apiName" : "echo-api",
     "includeAllRevisions" : true,
     "baseFileName" : "apiconfig"
 }
