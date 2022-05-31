@@ -37,7 +37,7 @@ jobs:
         uses: azure/powershell@v1
         with:
           inlineScript: |
-            $blobfile = "{0}_{1:yyyy-MM-dd-HH-mm-ss}.apimbackup" -f $$env:TARGET_APIMAN, [DateTime]::UtcNow
+            $blobfile = "{0}_{1:yyyy-MM-dd-HH-mm-ss}.apimbackup" -f $env:TARGET_APIMAN, [DateTime]::UtcNow
             Write-host ("Backup API Management {0} to https://{1}.blob.core.windows.net/{2}/{3}" -f $env:TARGET_APIMAN, $env:TARGET_STRACCOUNT, $env:TARGET_CONTAINER, $blobfile)
 
             $bakstr = (Get-AzStorageAccount | where { $_.StorageAccountName -eq $env:TARGET_STRACCOUNT })[0]
