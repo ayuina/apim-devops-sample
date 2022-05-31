@@ -42,7 +42,7 @@ jobs:
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           resourceGroupName: ${{ env.RG_NAME }}
           template: ./arm-master.json
-          parameters: location=${{ env.LOCATION }} apimServiceName=${{ env.APIM_NAME }} storageAccountName=${{ env.STRACC_NAME }} targetApiName= targetApiRevision=
+          parameters: ./arm-master.parameters.json location=${{ env.LOCATION }} apimServiceName=${{ env.APIM_NAME }} storageAccountName=${{ env.STRACC_NAME }}
 
   deploy-production:
     needs: [deploy-stage]
