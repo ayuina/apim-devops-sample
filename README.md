@@ -124,6 +124,9 @@ New-AzResourceGroupDeployment -Name "apim-prodenv" -ResourceGroupName $prodrg -T
     -location $location -storageAccountName $prodStrAccName -apimServiceName $prodApimName
 ```
 
+こちらの展開が終わると本番環境の API Management でも Echo API の Revision 1 が出来上がっているはずです。
+ここに開発環境で作成した Revision 2 の API をデプロイしていきます。
+
 ### リンクされたテンプレートのアップロード
 
 Storage Account が出来上がったら、Blob コンテナーを作成して SAS を発行、Extractor で出力しておいたテンプレート一式をアップロードしておきます。
@@ -173,7 +176,8 @@ New-AzResourceGroupDeployment -Name "api-$($containerName)" -ResourceGroupName $
 
 ### #################################################
 
-
+revision がついてないAPIの修正
+isCurrentをfalse に
 
 
 # GitHub Actions を使用した DevOps 編
