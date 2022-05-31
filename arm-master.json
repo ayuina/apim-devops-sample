@@ -24,21 +24,22 @@
       "type": "string",
       "metadata": {
         "description": "base url of storge ex) https://account.blob.core.windows.net/container/"
-      }
-
+      },
+      "defaultValue": ""
     },
     "storageSasToken": {
       "type": "string",
       "metadata": {
         "description": "container level sas token ex) ?sv=....&st=....&se=....&sr=c$sp=r&sig=...."
-      }
-
+      },
+      "defaultValue": ""
     },
     "baseFileName": {
       "type": "string",
       "metadata": {
         "description": "basefilename when extracted"
-      }
+      },
+      "defaultValue": ""
     },
     "targetApiName": {
       "type": "string",

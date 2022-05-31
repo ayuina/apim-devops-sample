@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location":{
+      "value": "region name"
+    },
+    "apimServiceName": {
+      "value": "prefix-apim-env"
+    },
+    "storageAccountName": {
+      "value": "straccname"
+    },
+    "storageBaseUrl": {
+      "value": "https://account.blob.core.windows.net/container/"
+    },
+    "storageSasToken": {
+      "value": "?token=goes-here"
+    },
+    "baseFileName":{
+      "value": "apiconfig"
+    }
+  }
+}
