@@ -2,10 +2,22 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "location of service"
+      }
+    },
     "apimServiceName": {
       "type": "string",
       "metadata": {
         "description": "Name of the API Management"
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Storage Account"
       }
     },
     "storageBaseUrl": {
@@ -32,26 +44,41 @@
       "type": "string",
       "metadata": {
         "description": "target api name to import"
-      }
+      },
+      "defaultValue": ""
     },
     "targetApiRevision": {
       "type": "string",
       "metadata": {
         "description": "target revision of api to import"
-      }
+      },
+      "defaultValue": ""
     }
   },
   "variables": {
+      "deployApiConfig":"[and(not(empty(parameters('targetApiName'))), not(empty(parameters('targetApiRevision'))))]",
       "linkedTemplatesBaseUrl": "[concat(parameters('storageBaseUrl'), parameters('targetApiName'), ';rev=', parameters('targetApiRevision'),'/')]",
       "policyXMLBaseUrl": "[concat(parameters('storageBaseUrl'), parameters('targetApiName'), ';rev=', parameters('targetApiRevision'),'/policies/')]"
   },
   "resources": [
     {
+      "apiVersion": "2021-09-01",
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[parameters('storageAccountName')]",
+      "location": "[parameters('location')]",
+      "kind": "StorageV2",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      }
+    },
+
+    {
       "apiVersion": "2021-08-01",
       "name": "[parameters('apimServiceName')]",
       "type": "Microsoft.ApiManagement/service",
       "tags": {},
-      "location": "japaneast",
+      "location": "[parameters('location')]",
       "properties": {
         "publisherEmail": "ayumu.inaba@live.com",
         "publisherName": "ainaba",
@@ -72,6 +99,7 @@
       }
     },
     {
+      "condition": "[variables('deployApiConfig')]",
       "apiVersion": "2022-01-01",
       "type": "Microsoft.Resources/deployments",
       "name": "apiMasterTemplate",
