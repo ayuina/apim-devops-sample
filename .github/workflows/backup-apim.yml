@@ -33,7 +33,7 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }} 
           enable-AzPSSession: true
-      - name: 'Get resource group with PowerShell action'
+      - name: 'Backup API Management contents'
         uses: azure/powershell@v1
         with:
           inlineScript: |
@@ -42,7 +42,7 @@ jobs:
 
             $bakstr = (Get-AzStorageAccount | where { $_.StorageAccountName -eq $env:TARGET_STRACCOUNT })[0]
             $strkey = (Get-AzStorageAccountKey -ResourceGroupName $bakstr.ResourceGroupName -AccountName $bakstr.StorageAccountName)[0].Value
-            $strctx = New-AzStorageContext -StorageAccountName $stracc -StorageAccountKey $strkey
+            $strctx = New-AzStorageContext -StorageAccountName $env:TARGET_STRACCOUNT -StorageAccountKey $strkey
             $apiman = (Get-AzApiManagement | where {$_.Name -eq $env:TARGET_APIMAN})[0]
             Backup-AzApiManagement -ResourceGroupName $apiman.ResourceGroupName -Name $apiman.Name `
               -StorageContext $strctx -TargetContainerName  $env:TARGET_CONTAINER -TargetBlobName $blobfile
