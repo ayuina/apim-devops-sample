@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     environment: prod
     steps:
       - name: checkout code
@@ -48,7 +48,7 @@ jobs:
             echo $strAccKey
 
             $strctx = New-AzStorageContext -StorageAccountName $prodStrAccName -StorageAccountKey $strAccKey
-            $containerName = [DateTime]::Now.ToString("yyyyMMddHHmmss")
+            $containerName = [DateTime]::Now.ToString("yyyyMMdd-HHmmss")
             echo $containerName
 
             $container = New-AzStorageContainer -Context $strctx -Name $containerName
@@ -66,7 +66,7 @@ jobs:
             Get-ChildItem $templateRoot -Recurse | where {$_ -is [System.IO.FileInfo]} | foreach {
                 $blob = [System.IO.Path]::GetRelativePath($templateRoot, $_.Fullname).Replace("\", "/")
                 Write-Host ("uploading {0} as {1}" -f $_.Fullname, $blob  )
-                Set-AzStorageBlobContent -File $_.Fullname -Container "fuga" -Blob "$blob" -Context $strctx 
+                Set-AzStorageBlobContent -File $_.Fullname -Container $containerName -Blob "$blob" -Context $strctx 
             }
 
           azPSVersion: "latest"
