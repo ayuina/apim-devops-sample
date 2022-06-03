@@ -48,7 +48,6 @@ jobs:
 
             $containerName = [DateTime]::Now.ToString("yyyyMMdd-HHmmss")
             echo "CONTAINER_NAME=$containerName" >> $env:GITHUB_ENV
-
           azPSVersion: "latest"
 
       - name: 'Backup production API Management contents'
