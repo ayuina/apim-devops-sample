@@ -343,6 +343,11 @@ $prodApimName = $prodparam.parameters.apimServiceName.value
     -restoreblob 'ayuina-apim-prod_2022-06-03-03-27-07.apimbackup'
 ```
 
+### 補足 : 指定した API の全 Revision の Extract
+
+上記で説明した内容では Extractor を実行すると、新規に作成した Revision だけでなく全ての Revision の設定内容が出力されます。
+これは Extractor の設定としてはこの方式が一番やりやすかったからではありますが、「うっかり旧 Revision を修正してしまった場合にも、Git で差分が確認できる」という副次的なメリットがあります。
+ただ、今後 Revision が増えていくと徐々に時間がかかるようになっていきますので、不要になった過去の Revision は削除するなどの工夫をしてください。
 
 # GitHub Actions を使用した DevOps 編
 
