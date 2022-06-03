@@ -74,7 +74,7 @@ Remove-Item $zipfile
 ```
 
 次にリソースキットの Extractor を使用して ARM テンプレートを生成するための構成ファイルを作成します。
-サンプル（ [extract-echo-api.json](./extract-echo-api.json) ）では API Management 作成時に既定で提供される Echo API を対象にしています。
+サンプル（ [echo-api-extract.json](./echo-api-extract.json) ）では API Management 作成時に既定で提供される Echo API を対象にしています。
 また展開した ARM テンプレートは API 単位でディレクトリを分け、さらにリビジョンごとにサブディレクトリを分ける構成にしています。
 
 なお Extractor 構成ファイルでは resourceGroup, sourceApimName, fileFolder, apiName 以外は実際の値でなくても構いません。
@@ -84,7 +84,7 @@ Extractor 構成ファイルの詳細は[こちら](https://github.com/Azure/azu
 
 ```powershell
 # extract an API definition from api management dev instance
-$config = [System.IO.Path]::GetFullPath(".\extract-echo-api.json")
+$config = [System.IO.Path]::GetFullPath(".\echo-api-extract.json")
 .\reskit\ArmTemplates.exe extract --extractorConfig $config
 # or override command line parameter
 .\reskit\ArmTemplates.exe extract --extractorConfig $config --sourceApimName $devApimName --resourceGroup $devrg
@@ -105,6 +105,8 @@ $config = [System.IO.Path]::GetFullPath(".\extract-echo-api.json")
             *.template.json
         ...
 ```
+
+### （参考）出力内容の確認
 
 Hello API の場合 Revision 1 は API Management 生成時に自動生成されたものであるため、本番環境には追加した Revision 2 をデプロイすることになります。
 先ほどの例のように Hello Operation を追加したとすると、Revision 1 と 2 のディレクトリに含まれる ```basefilename-echo-api;rev=N-api.template.json``` というファイルを比較すると、以下の様な Azure リソースが確認できます（内容は抜粋したもの）。
@@ -317,7 +319,7 @@ New-AzResourceGroupDeployment -Name "api-$($containerName)" -ResourceGroupName $
     - ARM テンプレートをデプロイ
     - 動作確認をして正常なら Revision を切り替え
 
-### 補足：Revsision の切り替え
+### （補足）Revsision の切り替え
 
 ARM テンプレートを使用して API をデプロイする場合、Current Revision を変更することができません。
 例えばこのケースでは本番環境で Echo API は Current Revision が "1" になっているのですが、Revision 2 の Echo
@@ -326,7 +328,7 @@ ARM テンプレートを使用して API をデプロイする場合、Current 
 とはいえ本番環境でいきなり Revision が切り替わると予期せぬエラーが発生したときに大問題になりますので、
 ここでやっているように最終チェック後に切り替えをする手順の方が適切だと考えます。
 
-### 補足：API Management のリストア
+### （補足）API Management のリストア
 
 開発環境や本番環境で作業している際にうっかり API Management の設定内容を壊してしまうのでやり直したい場合もあるでしょう。
 その場合は適宜取っておいたバックアップデータをリストアすれば元の状態に戻せます。
@@ -349,6 +351,7 @@ $prodApimName = $prodparam.parameters.apimServiceName.value
 これは Extractor の設定としてはこの方式が一番やりやすかったからではありますが、「うっかり旧 Revision を修正してしまった場合にも、Git で差分が確認できる」という副次的なメリットがあります。
 ただ、今後 Revision が増えていくと徐々に時間がかかるようになっていきますので、不要になった過去の Revision は削除するなどの工夫をしてください。
 
+
 # GitHub Actions を使用した DevOps 編
 
 さて一連の作業の流れが確認出来たので、ここからは Github Actions を使用して自動化していきます。
@@ -362,15 +365,16 @@ Resource Kit ではリポジトリのフォークを使用した開発フロー�
 
 自動化する内容とイベントを整理していくと以下のようになるでしょうか。
 
-|イベント|GitHub Actionsトリガー|処理内容|補足|
+|イベント|開発者の作業|GitHub Actions トリガー|GitHub Actions ワークフロー|
 |---|---|---|---|
-|開発作業の開始|workflow_dispatch|開発環境の API Management の全 API 設定をバックアップ|作業開始のタイミングで手動実行することにします|
-|本番環境への移送|pull_request|本番環境の API Management へ開発した API 設定をデプロイ|開発作業が終わったら main ブランチへ Pull Request を出すこと|
-|本番環境で稼働開始|push|デプロイした API の Current Revision を切り替え|テストとレビューの結果、無事に main へマージされたら本番反映する|
+|開発作業の開始|手動実行|workflow_dispatch|開発環境の API Management のバックアップを行う|
+|本番環境へ移送|main ブランチへのプルリクエスト|pull_request|本番環境の API Management のバックアップを行い、対象のリビジョンをデプロイする|
+|本番稼働|main ブランチへのマージ|push|本番環境の API Management のリビジョンを切り替える|
+
 
 ### Github Actions から Azure に接続する
 
-GitHub Actions ワークフローから Azure 環境を操作することになりますので、Azure Active Directory に対してサービスプリンシパルとしてログインできる必要があります。
+以降の GitHub Actions ワークフローでは Azure 環境を操作することになりますので、Azure Active Directory に対してサービスプリンシパルとしてログインできる必要があります。
 本サンプルではフェデレーション ID 資格情報を使用していますので、以下の設定が必要です。
 
 - Azure Active Directory にアプリケーションを登録する
@@ -386,14 +390,18 @@ GitHub Actions ワークフローから Azure 環境を操作することにな�
 - [GitHub Actions を使用して Azure に接続する](https://docs.microsoft.com/ja-jp/azure/developer/github/connect-from-azure?tabs=azure-portal%2Clinux)」
 
 
-### 開発環境の API Management のバックアップ
+### 開発作業の開始
 
 Github Actions を使用してバックアップするためのワークフローは[こちら](./.github/workflows/backup-apim.yml)にサンプル置いてあります。
-こちらを実行するためには下記の設定が必要です。
-
-- GitHub Environment （```dev``` および ```prod``）の追加
-- Azure AD アプリケーションの信頼するエンティティとして ```dev``` 環境を追加
-
-ワークフローの手動実行時に GitHub Environment を選択できるようになっており、選択した Environment 名を含むパラメータファイルを読み込むようになっています。
+このワークフローの手動実行時に GitHub Environment を指定できるようになっており、選択した Environment 名を含むパラメータファイルを読み込むようになっています。
 
 ![backup-apim-workflow](./images/backup-apim-workflow.png)
+
+このワークフローを実行するためには事前に下記の設定が必要です。
+
+- GitHub Environment （```dev``` および ```prod```）の追加
+- Azure AD アプリケーションの信頼するエンティティとして ```dev``` 環境を追加
+- API Management に対して必要な権限を持つ共同作成者などのロールを Azure AD アプリケーションを割り当てる
+
+### 本番環境へ移送
+
