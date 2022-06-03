@@ -39,6 +39,7 @@ jobs:
           inlineScript: |
             $para = (Get-Content ./echo-api-armdeploy.prod.parameters.json | ConvertFrom-Json ).parameters
             $prodStrAccName = $para.storageAccountName.value
+            $prodrg = (Get-AzStorageAccount | where { $_.StorageAccountName -eq $prodStrAccName })[0].ResourceGroupName
             $targetApi = $para.targetApiName.value
             $targetRevision = $para.targetApiRevision.value
 
