@@ -57,6 +57,7 @@ jobs:
             Write-Host "generate container sas"
             [DateTime]$exp = [DateTime]::UtcNow.AddDays(1)
             $sastoken = New-AzStorageContainerSASToken -Context $strctx -Name $containerName -Permission racwtl -ExpiryTime $exp
+            echo $sastoken
             echo "SAS_TOKEN=$sastoken" >> $env:GITHUB_ENV
 
             Write-Host "Upload linked template"
@@ -64,7 +65,7 @@ jobs:
             Get-ChildItem $templateRoot -Recurse | where {$_ -is [System.IO.FileInfo]} | foreach {
                 $blob = [System.IO.Path]::GetRelativePath($templateRoot, $_.Fullname).Replace("\", "/")
                 Write-Host ("uploading {0} as {1}" -f $_.Fullname, $blob  )
-                Set-AzStorageBlobContent -File $_.Fullname -Container $containerName -Blob $blob -Context $strctx 
+                Set-AzStorageBlobContent -File $_.Fullname -Container "$containerName" -Blob "$blob" -Context $strctx 
             }
 
           azPSVersion: "latest"
