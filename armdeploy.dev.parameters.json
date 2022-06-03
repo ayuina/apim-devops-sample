@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value":"japaneast"
+    },
+    "storageAccountName": {
+      "value":"ayuinapimdevstr"
+    },
+    "backupContainerName": {
+      "value": "apim-backup"
+    },
+    "apimServiceName": {
+      "value":"ayuina-apim-dev"
+    },
+    "publisherEmail": {
+      "value": "dummy@contoso.com"
+    },
+    "publisherName": {
+      "value": "hoge, contoso"
+    }
+  }
+}

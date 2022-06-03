@@ -1,0 +1,372 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "apimServiceName": {
+      "type": "string"
+    },
+    "policyXMLBaseUrl": {
+      "type": "string"
+    },
+    "policyXMLSasToken": {
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=3')]",
+      "dependsOn": [],
+      "properties": {
+        "authenticationSettings": {
+          "subscriptionKeyRequired": false
+        },
+        "subscriptionKeyParameterNames": {
+          "header": "Ocp-Apim-Subscription-Key",
+          "query": "subscription-key"
+        },
+        "apiRevision": "3",
+        "apiRevisionDescription": "skip revision 1 to 3",
+        "subscriptionRequired": true,
+        "displayName": "Echo API",
+        "serviceUrl": "http://echoapi.cloudapp.net/api",
+        "path": "echo",
+        "protocols": [
+          "https"
+        ]
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/products/apis",
+      "name": "[concat(parameters('apimServiceName'), '/starter/echo-api;rev=3')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimServiceName'), 'echo-api;rev=3')]"
+      ],
+      "properties": {
+        "displayName": "Starter",
+        "description": "Subscribers will be able to run 5 calls/minute up to a maximum of 100 calls/week.",
+        "subscriptionRequired": true,
+        "approvalRequired": false,
+        "state": "published"
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/products/apis",
+      "name": "[concat(parameters('apimServiceName'), '/unlimited/echo-api;rev=3')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/products/apis', parameters('apimServiceName'), 'starter', 'echo-api;rev=3')]"
+      ],
+      "properties": {
+        "displayName": "Unlimited",
+        "description": "Subscribers have completely unlimited access to the API. Administrator approval is required.",
+        "subscriptionRequired": true,
+        "approvalRequired": true,
+        "state": "published"
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis/operations",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=3/create-resource')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimServiceName'), 'echo-api;rev=3')]"
+      ],
+      "properties": {
+        "displayName": "Create resource",
+        "method": "POST",
+        "urlTemplate": "/resource",
+        "description": "A demonstration of a POST call based on the echo backend above. The request body is expected to contain JSON-formatted data (see example below). A policy is used to automatically transform any request sent in JSON directly to XML. In a real-world scenario this could be used to enable modern clients to speak to a legacy backend.",
+        "templateParameters": [],
+        "request": {
+          "headers": [],
+          "queryParameters": [],
+          "representations": [
+            {
+              "contentType": "application/json",
+              "examples": {
+                "default": {
+                  "value": "{\r\n\t\"vehicleType\": \"train\",\r\n\t\"maxSpeed\": 125,\r\n\t\"avgSpeed\": 90,\r\n\t\"speedUnit\": \"mph\"\r\n}"
+                }
+              }
+            }
+          ]
+        },
+        "responses": [
+          {
+            "headers": [],
+            "representations": [],
+            "statusCode": 200
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis/operations",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=3/hello')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimServiceName'), 'echo-api;rev=3')]"
+      ],
+      "properties": {
+        "displayName": "Hello",
+        "method": "GET",
+        "urlTemplate": "/hello",
+        "description": "",
+        "templateParameters": [],
+        "responses": [
+          {
+            "description": "",
+            "headers": [],
+            "representations": [
+              {
+                "contentType": "application/json",
+                "examples": {
+                  "default": {
+                    "value": {
+                      "message": "Hello World !"
+                    }
+                  }
+                }
+              }
+            ],
+            "statusCode": 200
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis/operations",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=3/6299d3029a98615b616d96c9')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimServiceName'), 'echo-api;rev=3')]"
+      ],
+      "properties": {
+        "displayName": "HelloNew",
+        "method": "GET",
+        "urlTemplate": "/clone-6299d/hello",
+        "description": "",
+        "templateParameters": [],
+        "responses": [
+          {
+            "description": "",
+            "headers": [],
+            "representations": [
+              {
+                "contentType": "application/json",
+                "examples": {
+                  "default": {
+                    "value": {
+                      "message": "Hello World !"
+                    }
+                  }
+                }
+              }
+            ],
+            "statusCode": 200
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis/operations",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=3/modify-resource')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimServiceName'), 'echo-api;rev=3')]"
+      ],
+      "properties": {
+        "displayName": "Modify Resource",
+        "method": "PUT",
+        "urlTemplate": "/resource",
+        "description": "A demonstration of a PUT call handled by the same \"echo\" backend as above. You can now specify a request body in addition to headers and it will be returned as well.",
+        "templateParameters": [],
+        "responses": [
+          {
+            "headers": [],
+            "representations": [],
+            "statusCode": 200
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis/operations",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=3/remove-resource')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimServiceName'), 'echo-api;rev=3')]"
+      ],
+      "properties": {
+        "displayName": "Remove resource",
+        "method": "DELETE",
+        "urlTemplate": "/resource",
+        "description": "A demonstration of a DELETE call which traditionally deletes the resource. It is based on the same \"echo\" backend as in all other operations so nothing is actually deleted.",
+        "templateParameters": [],
+        "responses": [
+          {
+            "headers": [],
+            "representations": [],
+            "statusCode": 200
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis/operations",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=3/retrieve-header-only')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimServiceName'), 'echo-api;rev=3')]"
+      ],
+      "properties": {
+        "displayName": "Retrieve header only",
+        "method": "HEAD",
+        "urlTemplate": "/resource",
+        "description": "The HEAD operation returns only headers. In this demonstration a policy is used to set additional headers when the response is returned and to enable JSONP.",
+        "templateParameters": [],
+        "responses": [
+          {
+            "headers": [],
+            "representations": [],
+            "statusCode": 200
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis/operations",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=3/retrieve-resource')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimServiceName'), 'echo-api;rev=3')]"
+      ],
+      "properties": {
+        "displayName": "Retrieve resource",
+        "method": "GET",
+        "urlTemplate": "/resource",
+        "description": "A demonstration of a GET call on a sample resource. It is handled by an \"echo\" backend which returns a response equal to the request (the supplied headers and body are being returned as received).",
+        "templateParameters": [],
+        "request": {
+          "headers": [],
+          "queryParameters": [
+            {
+              "defaultValue": "sample",
+              "description": "A sample parameter that is required and has a default value of \"sample\".",
+              "name": "param1",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "description": "Another sample parameter, set to not required.",
+              "name": "param2",
+              "required": false,
+              "type": "number"
+            }
+          ],
+          "representations": []
+        },
+        "responses": [
+          {
+            "description": "Returned in all cases.",
+            "headers": [],
+            "representations": [],
+            "statusCode": 200
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis/operations",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=3/retrieve-resource-cached')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimServiceName'), 'echo-api;rev=3')]"
+      ],
+      "properties": {
+        "displayName": "Retrieve resource (cached)",
+        "method": "GET",
+        "urlTemplate": "/resource-cached",
+        "description": "A demonstration of a GET call with caching enabled on the same \"echo\" backend as above. Cache TTL is set to 1 hour. When you make the first request the headers you supplied will be cached. Subsequent calls will return the same headers as the first time even if you change them in your request.",
+        "templateParameters": [],
+        "request": {
+          "headers": [],
+          "queryParameters": [
+            {
+              "defaultValue": "sample",
+              "description": "A sample parameter that is required and has a default value of \"sample\".",
+              "name": "param1",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "description": "Another sample parameter, set to not required.",
+              "name": "param2",
+              "required": false,
+              "type": "string"
+            }
+          ],
+          "representations": []
+        },
+        "responses": [
+          {
+            "headers": [],
+            "representations": [],
+            "statusCode": 200
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis/operations/policies",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=3/create-resource/policy')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis/operations', parameters('apimServiceName'), 'echo-api;rev=3', 'create-resource')]"
+      ],
+      "properties": {
+        "value": "[concat(parameters('policyXMLBaseUrl'), 'echo-api;rev=3-create-resource-operationPolicy.xml', parameters('policyXMLSasToken'))]",
+        "format": "rawxml-link"
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis/operations/policies",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=3/6299d3029a98615b616d96c9/policy')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis/operations', parameters('apimServiceName'), 'echo-api;rev=3', '6299d3029a98615b616d96c9')]"
+      ],
+      "properties": {
+        "value": "[concat(parameters('policyXMLBaseUrl'), 'echo-api;rev=3-6299d3029a98615b616d96c9-operationPolicy.xml', parameters('policyXMLSasToken'))]",
+        "format": "rawxml-link"
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis/operations/policies",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=3/retrieve-header-only/policy')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis/operations', parameters('apimServiceName'), 'echo-api;rev=3', 'retrieve-header-only')]"
+      ],
+      "properties": {
+        "value": "[concat(parameters('policyXMLBaseUrl'), 'echo-api;rev=3-retrieve-header-only-operationPolicy.xml', parameters('policyXMLSasToken'))]",
+        "format": "rawxml-link"
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis/operations/policies",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=3/retrieve-resource-cached/policy')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis/operations', parameters('apimServiceName'), 'echo-api;rev=3', 'retrieve-resource-cached')]"
+      ],
+      "properties": {
+        "value": "[concat(parameters('policyXMLBaseUrl'), 'echo-api;rev=3-retrieve-resource-cached-operationPolicy.xml', parameters('policyXMLSasToken'))]",
+        "format": "rawxml-link"
+      }
+    }
+  ]
+}

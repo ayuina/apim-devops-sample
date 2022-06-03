@@ -3,15 +3,8 @@ name: Backup API Management contents
 on:
   workflow_dispatch:
     inputs:
-      apiManagement:
-        type: string
-        default: demo-apim-dev
-      storageAccount:
-        type: string
-        default: demoapimdevstr
-      storageContainer:
-        type: string
-        default: apim-backup
+      targetEnvironment:
+        type: environment
 
 permissions:
   id-token: write
@@ -20,12 +13,13 @@ permissions:
 jobs:
   backup-apim-devenv:
     runs-on: ubuntu-latest
-    environment: dev
+    environment: ${{ github.event.inputs.targetEnvironment }}
     env:
-      TARGET_APIMAN: ${{ github.event.inputs.apiManagement }}
-      TARGET_STRACCOUNT: ${{ github.event.inputs.storageAccount }}
-      TARGET_CONTAINER: ${{ github.event.inputs.storageContainer }}
+      PARAMETER_FILE: "armdeploy.${{ github.event.inputs.targetEnvironment }}.parameters.json"
     steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
       - name: Login to Azure
         uses: azure/login@v1
         with:
@@ -33,17 +27,14 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }} 
           enable-AzPSSession: true
+
       - name: 'Backup API Management contents'
         uses: azure/powershell@v1
         with:
           inlineScript: |
-            $blobfile = "{0}_{1:yyyy-MM-dd-HH-mm-ss}.apimbackup" -f $env:TARGET_APIMAN, [DateTime]::UtcNow
-            Write-host ("Backup API Management {0} to https://{1}.blob.core.windows.net/{2}/{3}" -f $env:TARGET_APIMAN, $env:TARGET_STRACCOUNT, $env:TARGET_CONTAINER, $blobfile)
-
-            $bakstr = (Get-AzStorageAccount | where { $_.StorageAccountName -eq $env:TARGET_STRACCOUNT })[0]
-            $strkey = (Get-AzStorageAccountKey -ResourceGroupName $bakstr.ResourceGroupName -AccountName $bakstr.StorageAccountName)[0].Value
-            $strctx = New-AzStorageContext -StorageAccountName $env:TARGET_STRACCOUNT -StorageAccountKey $strkey
-            $apiman = (Get-AzApiManagement | where {$_.Name -eq $env:TARGET_APIMAN})[0]
-            Backup-AzApiManagement -ResourceGroupName $apiman.ResourceGroupName -Name $apiman.Name `
-              -StorageContext $strctx -TargetContainerName  $env:TARGET_CONTAINER -TargetBlobName $blobfile
+            $para = (Get-Content $env:PARAMETER_FILE | ConvertFrom-Json ).parameters
+            $devStrAccName = $para.storageAccountName.value
+            $bakContainer = $para.backupContainerName.value
+            $devApimName = $para.apimServiceName.value
+            .\ops-apim.ps1 -backup -storageAccountName $devStrAccName -containerName $bakContainer -sourceapim $devApimName
           azPSVersion: "latest"
