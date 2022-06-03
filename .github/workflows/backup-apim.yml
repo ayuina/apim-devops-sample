@@ -13,7 +13,7 @@ permissions:
 jobs:
   backup-apim-devenv:
     runs-on: ubuntu-latest
-    environment: dev
+    environment: ${{ github.event.inputs.targetEnvironment }}
     env:
       PARAMETER_FILE: "armdeploy.${{ github.event.inputs.targetEnvironment }}.parameters.json"
     steps:
@@ -28,9 +28,9 @@ jobs:
         uses: azure/powershell@v1
         with:
           inlineScript: |
-            $devparam = Get-Content $env:PARAMETER_FILE | ConvertFrom-Json 
-            $devStrAccName = $devparam.parameters.storageAccountName.value
-            $bakContainer = $devparam.parameters.backupContainerName.value
-            $devApimName = $devparam.parameters.apimServiceName.value
+            $para = (Get-Content $env:PARAMETER_FILE | ConvertFrom-Json ).parameters
+            $devStrAccName = $para.storageAccountName.value
+            $bakContainer = $para.backupContainerName.value
+            $devApimName = $para.apimServiceName.value
             .\ops-apim.ps1 -backup -storageAccountName $devStrAccName -containerName $bakContainer -sourceapim $devApimName
           azPSVersion: "latest"
