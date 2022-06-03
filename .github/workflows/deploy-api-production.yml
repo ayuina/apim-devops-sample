@@ -22,6 +22,28 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }} 
           enable-AzPSSession: true
 
+      - name: Load parameter
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $para = (Get-Content ./echo-api-armdeploy.prod.parameters.json | ConvertFrom-Json ).parameters
+
+            $prodStrAccName = $para.storageAccountName.value
+            echo "PROD_STRACCNAME=$prodStrAccName" >> $env:GITHUB_ENV
+
+            $prodrg = (Get-AzStorageAccount | where { $_.StorageAccountName -eq $prodStrAccName })[0].ResourceGroupName
+            echo "PROD_RG=$prodrg" >> $env:GITHUB_ENV
+
+            $targetApi = $para.targetApiName.value
+            echo "TARGET_API=$targetApi" >> $env:GITHUB_ENV
+
+            $targetRevision = $para.targetApiRevision.value
+            echo "TARGET_REVISION=$targetRevision" >> $env:GITHUB_ENV
+
+            $containerName = [DateTime]::Now.ToString("yyyyMMdd-HHmmss")
+            echo "CONTAINER_NAME=$containerName" >> $env:GITHUB_ENV
+
+          azPSVersion: "latest"
       # - name: 'Backup production API Management contents'
       #   uses: azure/powershell@v1
       #   with:
@@ -37,46 +59,33 @@ jobs:
         uses: azure/powershell@v1
         with:
           inlineScript: |
-            $para = (Get-Content ./echo-api-armdeploy.prod.parameters.json | ConvertFrom-Json ).parameters
-            $prodStrAccName = $para.storageAccountName.value
-            $prodrg = (Get-AzStorageAccount | where { $_.StorageAccountName -eq $prodStrAccName })[0].ResourceGroupName
-            $targetApi = $para.targetApiName.value
-            $targetRevision = $para.targetApiRevision.value
+            Write-Host "Creating container $env:CONTAINER_NAME"
+            $strAccKey = (Get-AzStorageAccountKey -ResourceGroupName $env:PROD_RG -Name $env:PROD_STRACCNAME)[0].Value
+            $strctx = New-AzStorageContext -StorageAccountName $env:PROD_STRACCNAME -StorageAccountKey $strAccKey
+            $container = New-AzStorageContainer -Context $strctx -Name $env:CONTAINER_NAME
 
-            Write-Host "Creating container"
-            $strAccKey = (Get-AzStorageAccountKey -ResourceGroupName $prodrg -Name $prodStrAccName)[0].Value
-            echo $strAccKey
-
-            $strctx = New-AzStorageContext -StorageAccountName $prodStrAccName -StorageAccountKey $strAccKey
-            $containerName = [DateTime]::Now.ToString("yyyyMMdd-HHmmss")
-            echo $containerName
-
-            $container = New-AzStorageContainer -Context $strctx -Name $containerName
-            echo "CONTAINER_NAME=$containerName" >> $env:GITHUB_ENV
-            Get-AzStorageContainer -Context $strctx
+            Write-Host ("Upload linked template for {0};rev={1}" -f $env:TARGET_API, $env:TARGET_REVISION)
+            $templateRoot = ".\{0}\{0};rev={1}"  -f $env:TARGET_API, $env:TARGET_REVISION
+            Get-ChildItem $templateRoot -Recurse | where {$_ -is [System.IO.FileInfo]} `
+            | foreach {
+                $blob = [System.IO.Path]::GetRelativePath($templateRoot, $_.Fullname).Replace("\", "/")
+                Set-AzStorageBlobContent -File $_.Fullname -Container $env:CONTAINER_NAME -Blob "$blob" -Context $strctx 
+            } `
+            | Format-Table
 
             Write-Host "generate container sas"
             [DateTime]$exp = [DateTime]::UtcNow.AddDays(1)
-            $sastoken = New-AzStorageContainerSASToken -Context $strctx -Name $containerName -Permission racwtl -ExpiryTime $exp
+            $sastoken = New-AzStorageContainerSASToken -Context $strctx -Name $env:CONTAINER_NAME -Permission racwtl -ExpiryTime $exp
             echo "SAS_TOKEN=$sastoken" >> $env:GITHUB_ENV
-            echo $sastoken
-
-            Write-Host "Upload linked template"
-            $templateRoot = ".\{0}\{0};rev={1}"  -f $targetApi, $targetRevision
-            Get-ChildItem $templateRoot -Recurse | where {$_ -is [System.IO.FileInfo]} | foreach {
-                $blob = [System.IO.Path]::GetRelativePath($templateRoot, $_.Fullname).Replace("\", "/")
-                Write-Host ("uploading {0} as {1}" -f $_.Fullname, $blob  )
-                Set-AzStorageBlobContent -File $_.Fullname -Container $containerName -Blob "$blob" -Context $strctx 
-            }
-
           azPSVersion: "latest"
 
-      - name: 'Test'
+      - name: 'Deploy API configuration'
         uses: azure/powershell@v1
         with:
           inlineScript: |
-            echo "container name"
-            echo $env:CONTAINER_NAME
-            echo "blob sas"
-            echo $env:SAS_TOKEN
+            $deploymentName = "api-$($env:CONTAINER_NAME)"
+
+            New-AzResourceGroupDeployment -Name $deploymentName -ResourceGroupName $env:PROD_RG `
+              -TemplateFile .\armdeploy.prod.json -TemplateParameterFile .\echo-api-armdeploy.prod.parameters.json `
+              -linkedTemplateContainerName $env:CONTAINER_NAME -storageSasToken $env:SAS_TOKEN 
           azPSVersion: "latest"
