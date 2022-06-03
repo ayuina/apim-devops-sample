@@ -34,6 +34,14 @@
         "description": "Name of the Storage Account"
       }
     },
+    "backupContainerName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of container for backup api management"
+      },
+      "defaultValue": "apim-backup"
+    },
+
     "linkedTemplateContainerName": {
       "type": "string",
       "metadata": {
@@ -71,9 +79,9 @@
     }
   },
   "variables": {
-      "deployApiConfig":"[and(not(empty(parameters('targetApiName'))), not(empty(parameters('targetApiRevision'))))]",
-      "linkedTemplatesBaseUrl": "[format('https://{0}.blob.core.windows.net/{1}/', parameters('storageAccountName'), parameters('linkedTemplateContainerName'))]",
-      "policyXMLBaseUrl": "[format('https://{0}.blob.core.windows.net/{1}/policies/', parameters('storageAccountName'), parameters('linkedTemplateContainerName'))]"
+    "deployApiConfig": "[and(not(empty(parameters('targetApiName'))), not(empty(parameters('targetApiRevision'))))]",
+    "linkedTemplatesBaseUrl": "[format('https://{0}.blob.core.windows.net/{1}/', parameters('storageAccountName'), parameters('linkedTemplateContainerName'))]",
+    "policyXMLBaseUrl": "[format('https://{0}.blob.core.windows.net/{1}/policies/', parameters('storageAccountName'), parameters('linkedTemplateContainerName'))]"
   },
   "resources": [
     {
@@ -87,6 +95,15 @@
         "tier": "Standard"
       }
     },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2021-09-01",
+      "name": "[format('{0}/default/{1}', parameters('storageAccountName'), parameters('backupContainerName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ]
+    },
+
     {
       "apiVersion": "2021-08-01",
       "name": "[parameters('apimServiceName')]",

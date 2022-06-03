@@ -132,6 +132,19 @@ New-AzResourceGroupDeployment -Name "apim-prodenv" -ResourceGroupName $prodrg -T
 こちらの展開が終わると本番環境の API Management でも Echo API の Revision 1 が出来上がっているはずです。
 ここに開発環境で作成した Revision 2 の API をデプロイしていきます。
 
+### デプロイ前のバックアップ
+
+そのまえに本番環境もバックアップをとっておきましょう。
+
+```powershell
+$prodparam =  Get-Content .\armdeploy.prod.parameters.json | ConvertFrom-Json
+$prodStrAccName = $prodparam.parameters.storageAccountName.value
+$bakContainer = $prodparam.parameters.backupContainerName.value
+$prodApimName = $prodparam.parameters.apimServiceName.value
+
+.\ops-apim.ps1 -backup -storageAccountName $prodStrAccName -containerName $bakContainer -sourceapim $prodApimName
+```
+
 ### リンクされたテンプレートのアップロード
 
 Storage Account が出来上がったら、Blob コンテナーを作成して SAS を発行、Extractor で出力しておいたテンプレート一式をアップロードしておきます。
@@ -145,8 +158,6 @@ $targetApi = $extractorConfig.apiName
 
 $targetRevision = '2'
 
-$prodparam =  Get-Content .\armdeploy.prod.parameters.json | ConvertFrom-Json
-$prodStrAccName = $prodparam.parameters.storageAccountName.value
 
 # create blob container
 $strAccKey = (Get-AzStorageAccountKey -ResourceGroupName $prodrg -Name $prodStrAccName)[0].Value

@@ -16,6 +16,9 @@
     },
     "storageAccountName": {
       "value": "ayuinaapimprodstr"
+    },
+    "backupContainerName": {
+      "value": "apim-backup"
     }
   }
 }
