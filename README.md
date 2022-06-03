@@ -364,17 +364,36 @@ Resource Kit ではリポジトリのフォークを使用した開発フロー�
 
 |イベント|GitHub Actionsトリガー|処理内容|補足|
 |---|---|---|---|
-|開発作業の開始|workflow_dispatch|開発環境の API Management の全 API 設定をバックアップ|作業開始のタイミングで手動実行|
-|本番環境への移送|pull_request|本番環境の API Management へ開発した API 設定をデプロイ|開発作業が終わったら main ブランチへ Pull Request を出す|
+|開発作業の開始|workflow_dispatch|開発環境の API Management の全 API 設定をバックアップ|作業開始のタイミングで手動実行することにします|
+|本番環境への移送|pull_request|本番環境の API Management へ開発した API 設定をデプロイ|開発作業が終わったら main ブランチへ Pull Request を出すこと|
 |本番環境で稼働開始|push|デプロイした API の Current Revision を切り替え|テストとレビューの結果、無事に main へマージされたら本番反映する|
 
-### Azure
+### Github Actions から Azure に接続する
 
-### 開発環境の API Management のバックアップ
+GitHub Actions ワークフローから Azure 環境を操作することになりますので、Azure Active Directory に対してサービスプリンシパルとしてログインできる必要があります。
+本サンプルではフェデレーション ID 資格情報を使用していますので、以下の設定が必要です。
 
-Github Actions を使用してバックアップするための[ワークフロー](./.github/workflows/backup-apim.yml)を使用することもできます。
-こちらを使用する場合はワークフローが Azure サブスクリプションにアクセスできる必要があります。
-サンプルのワークフローでは GitHub リポジトリのワークロード ID フェデレーション（執筆時点ではプレビュー）を使用しています。
+- Azure Active Directory にアプリケーションを登録する
+- 登録したアプリケーションが GitHub Repository を信頼するように設定する
+- Azure サブスクリプションに対して必要な権限を持つ共同作成者ロールなどに、登録したアプリケーションを割り当てる
+- GitHub Actions Secret に Azure AD テナント、Azure AD アプリケーション、Azure サブスクリプションに ID を登録する
+
+![github actions federation](./images/github-actions-federation.png)
+
+設定方法の詳細は下記をご参照ください。
 
 - [GitHub リポジトリを信頼するようにアプリを構成する (プレビュー)](https://docs.microsoft.com/ja-jp/azure/active-directory/develop/workload-identity-federation)
 - [GitHub Actions を使用して Azure に接続する](https://docs.microsoft.com/ja-jp/azure/developer/github/connect-from-azure?tabs=azure-portal%2Clinux)」
+
+
+### 開発環境の API Management のバックアップ
+
+Github Actions を使用してバックアップするためのワークフローは[こちら](./.github/workflows/backup-apim.yml)にサンプル置いてあります。
+こちらを実行するためには下記の設定が必要です。
+
+- GitHub Environment （```dev``` および ```prod``）の追加
+- Azure AD アプリケーションの信頼するエンティティとして ```dev``` 環境を追加
+
+ワークフローの手動実行時に GitHub Environment を選択できるようになっており、選択した Environment 名を含むパラメータファイルを読み込むようになっています。
+
+![backup-apim-workflow](./images/backup-apim-workflow.png)
