@@ -17,16 +17,16 @@ git checkout dev
 ### 開発環境の準備
 
 まずは開発作業用の API Management を準備します。
-ここでは ARM Template([arm-devenv.json](./arm-devenv.json)) を使用して、API Management と構成のバックアップ用の Storage Account を構築しています。
-API Management や Storage Account はユニークな名前が必要になりますのでパラメータファイル（[arm-devenv.parameters.json](./arm-devenv.parameters.json)）は書き換えて使ってください。
+ここでは ARM Template([armdeploy.dev.json](./armdeploy.dev.json)) を使用して、API Management と構成のバックアップ用の Storage Account を構築しています。
+API Management や Storage Account はユニークな名前が必要になりますのでパラメータファイル（[armdeploy.dev.parameters.json](./armdeploy.dev.parameters.json)）は書き換えて使ってください。
 
 ```powershell
 $location = 'japaneast'
 $devrg = 'apim-dev-rg'
 
 New-AzResourceGroup -Name $devrg -Location $location
-New-AzResourceGroupDeployment -Name "apim-devenv" -ResourceGroupName $devrg -TemplateFile .\arm-devenv.json `
-    -TemplateParameterFile .\arm-devenv.parameters.json
+New-AzResourceGroupDeployment -Name "apim-devenv" -ResourceGroupName $devrg -TemplateFile ./armdeploy.dev.json `
+    -TemplateParameterFile ./armdeploy.dev.parameters.json
 ```
 
 ### API のバックアップ
@@ -35,7 +35,7 @@ New-AzResourceGroupDeployment -Name "apim-devenv" -ResourceGroupName $devrg -Tem
 パラメータは先の ARM テンプレートデプロイに使用したバラメータファイルに記載されているはずなので、そちらから取ってきます。、
 
 ```powershell
-$devparam = Get-Content .\arm-devenv.parameters.json | ConvertFrom-Json 
+$devparam = Get-Content ./armdeploy.dev.parameters.json | ConvertFrom-Json 
 $devStrAccName = $devparam.parameters.storageAccountName.value
 $bakContainer = $devparam.parameters.backupContainerName.value
 $devApimName = $devparam.parameters.apimServiceName.value
@@ -112,7 +112,7 @@ $config = [System.IO.Path]::GetFullPath(".\extract-echo-api.json")
 Extractor が出力した各 API リビジョンのマスターテンプレート ```baseFilename-master.template.json``` には API Management そのものの定義が含まれていません。
 また API Management 以外のサービス、例えば ARM テンプレートデプロイ時にはマスターテンプレートからリンクされたテンプレートを保存するためのストレージアカウントなども含まれていません。
 Extractor が出力したマスターテンプレートを修正しすると、次に Extractor を実行した際に上書きされてしまうことになるので、これを呼び出すためのさらに上位のマスターテンプレートを作成することにします。
-サンプルは [arm-master.json](./arm-master.json) を参考にして下さい。
+サンプルは [armdeploy.prod.json](./armdeploy.prod.json) を参考にして下さい。
 
 ### 本番環境用 API Management と Storage Account の作成
 
@@ -125,8 +125,8 @@ $location = 'japaneast'
 $prodrg = 'apim-prod-rg'
 
 New-AzResourceGroup -Name $prodrg -Location $location
-New-AzResourceGroupDeployment -Name "apim-prodenv" -ResourceGroupName $prodrg -TemplateFile .\arm-master.json `
-    -TemplateParameterFile .\arm-master.parameters.json
+New-AzResourceGroupDeployment -Name "apim-prodenv" -ResourceGroupName $prodrg -TemplateFile .\armdeploy.prod.json `
+    -TemplateParameterFile .\armdeploy.prod.parameters.json
 ```
 
 こちらの展開が終わると本番環境の API Management でも Echo API の Revision 1 が出来上がっているはずです。
@@ -145,7 +145,7 @@ $targetApi = $extractorConfig.apiName
 
 $targetRevision = '2'
 
-$prodparam =  Get-Content .\arm-master.parameters.json | ConvertFrom-Json
+$prodparam =  Get-Content .\armdeploy.prod.parameters.json | ConvertFrom-Json
 $prodStrAccName = $prodparam.parameters.storageAccountName.value
 
 # create blob container

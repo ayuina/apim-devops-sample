@@ -1,0 +1,149 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "location of service"
+      }
+    },
+    "apimServiceName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the API Management"
+      }
+    },
+    "publisherEmail": {
+      "type": "string",
+      "defaultValue": "hoge@contoso.com",
+      "metadata": {
+        "description": "publisher email"
+      }
+    },
+    "publisherName": {
+      "type": "string",
+      "defaultValue": "hoge, contoso",
+      "metadata": {
+        "description": "publisher name"
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Storage Account"
+      }
+    },
+    "linkedTemplateContainerName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of container for linkedTemplate"
+      },
+      "defaultValue": ""
+    },
+    "storageSasToken": {
+      "type": "string",
+      "metadata": {
+        "description": "container level sas token ex) ?sv=....&st=....&se=....&sr=c$sp=r&sig=...."
+      },
+      "defaultValue": ""
+    },
+    "baseFileName": {
+      "type": "string",
+      "metadata": {
+        "description": "basefilename when extracted"
+      },
+      "defaultValue": ""
+    },
+    "targetApiName": {
+      "type": "string",
+      "metadata": {
+        "description": "target api name to import"
+      },
+      "defaultValue": ""
+    },
+    "targetApiRevision": {
+      "type": "string",
+      "metadata": {
+        "description": "target revision of api to import"
+      },
+      "defaultValue": ""
+    }
+  },
+  "variables": {
+      "deployApiConfig":"[and(not(empty(parameters('targetApiName'))), not(empty(parameters('targetApiRevision'))))]",
+      "linkedTemplatesBaseUrl": "[format('https://{0}.blob.core.windows.net/{1}/', parameters('storageAccountName'), parameters('linkedTemplateContainerName'))]",
+      "policyXMLBaseUrl": "[format('https://{0}.blob.core.windows.net/{1}/policies/', parameters('storageAccountName'), parameters('linkedTemplateContainerName'))]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2021-09-01",
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[parameters('storageAccountName')]",
+      "location": "[parameters('location')]",
+      "kind": "StorageV2",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "name": "[parameters('apimServiceName')]",
+      "type": "Microsoft.ApiManagement/service",
+      "tags": {},
+      "location": "[parameters('location')]",
+      "properties": {
+        "publisherEmail": "[parameters('publisherEmail')]",
+        "publisherName": "[parameters('publisherName')]",
+        "customProperties": {
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls11": "false",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls10": "false",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Tls11": "false",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Tls10": "false",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Ssl30": "false",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Protocols.Server.Http2": "false",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Ciphers.TripleDes168": "false",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Ssl30": "false"
+        }
+      },
+      "sku": {
+        "name": "Developer",
+        "capacity": 1
+      }
+    },
+    {
+      "condition": "[variables('deployApiConfig')]",
+      "apiVersion": "2022-01-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "apiMasterTemplate",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', parameters('apimServiceName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[format('{0}{1}-master.template.json{2}', variables('linkedTemplatesBaseUrl'), parameters('baseFileName'), parameters('storageSasToken'))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "apimServiceName": {
+            "value": "[parameters('apimServiceName')]"
+          },
+          "linkedTemplatesBaseUrl": {
+            "value": "[variables('linkedTemplatesBaseUrl')]"
+          },
+          "linkedTemplatesSasToken": {
+            "value": "[parameters('storageSasToken')]"
+          },
+          "policyXMLBaseUrl": {
+            "value": "[variables('policyXMLBaseUrl')]"
+          },
+          "policyXMLSasToken": {
+            "value": "[parameters('storageSasToken')]"
+          }
+        }
+      }
+    }
+  ]
+}
