@@ -54,6 +54,11 @@ jobs:
             echo "CONTAINER_NAME=$containerName" >> $env:GITHUB_ENV
             Get-AzStorageContainer -Context $strctx
 
+            Write-Host "generate container sas"
+            [DateTime]$exp = [DateTime]::UtcNow.AddDays(1)
+            $sastoken = New-AzStorageContainerSASToken -Context $strctx -Name $containerName -Permission racwtl -ExpiryTime $exp
+            echo "SAS_TOKEN=$sastoken" >> $env:GITHUB_ENV
+
             Write-Host "Upload linked template"
             $templateRoot = ".\{0}\{0};rev={1}"  -f $targetApi, $targetRevision
             Get-ChildItem $templateRoot -Recurse | where {$_ -is [System.IO.FileInfo]} | foreach {
@@ -62,10 +67,6 @@ jobs:
                 Set-AzStorageBlobContent -File $_.Fullname -Container $containerName -Blob $blob -Context $strctx 
             }
 
-            Write-Host "generate container sas"
-            [DateTime]$exp = [DateTime]::UtcNow.AddDays(1)
-            $sastoken = New-AzStorageContainerSASToken -Context $strctx -Name $containerName -Permission racwtl -ExpiryTime $exp
-            echo "SAS_TOKEN=$sastoken" >> $env:GITHUB_ENV
           azPSVersion: "latest"
 
       - name: 'Test'
