@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location":{
+      "value": "japaneast"
+    },
+    "apimServiceName": {
+      "value": "ayuina-apim-prod"
+    },
+    "publisherEmail": {
+      "value": "dummy@contoso.com"
+    },
+    "publisherName": {
+      "value": "hoge, contoso"
+    },
+    "storageAccountName": {
+      "value": "ayuinaapimprodstr"
+    },
+    "backupContainerName": {
+      "value": "apim-backup"
+    },
+    "baseFileName":{
+      "value": "apiconfig"
+    },
+    "targetApiName": {
+      "value": "echo-api"
+    },
+    "targetApiRevision": {
+      "value": "3"
+    }
+  }
+}

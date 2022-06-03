@@ -1,0 +1,59 @@
+name: Import API configuration from API Management
+
+on:
+  workflow_dispatch:
+    inputs:
+      prefix:
+        type: string
+        default: demo0531
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-stage:
+    runs-on: ubuntu-latest
+    environment: stage
+    env:
+      LOCATION: japaneast
+      RG_NAME: ${{github.event.inputs.prefix}}-apim-stage-rg
+      APIM_NAME: ${{github.event.inputs.prefix}}-apim-stage
+      STRACC_NAME: ${{github.event.inputs.prefix}}apimstgstr
+      CONTAINER_NAME: apim-arm-deploy
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }} 
+
+      - name: 'Create Resource Group'
+        run: |
+          az group create -n $RG_NAME -l $LOCATION
+
+      - name: Run ARM deploy (Service Only)
+        uses: azure/arm-deploy@v1
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: ${{ env.RG_NAME }}
+          template: ./arm-master.json
+          parameters: ./arm-master.parameters.json location=${{ env.LOCATION }} apimServiceName=${{ env.APIM_NAME }} storageAccountName=${{ env.STRACC_NAME }}
+
+  deploy-production:
+    needs: [deploy-stage]
+    runs-on: ubuntu-latest
+    environment: prod
+    env:
+      RG_NAME: ${{github.event.inputs.prefix}}-apim-prod-rg
+      APIM_NAME: ${{github.event.inputs.prefix}}-apim-prod
+      STRACC_NAME: ${{github.event.inputs.prefix}}apimprdstr
+      CONTAINER_NAME: apim-arm-deploy
+    steps:
+      - run: 'ls -la'
+
+
