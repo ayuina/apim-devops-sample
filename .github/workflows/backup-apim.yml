@@ -3,9 +3,8 @@ name: Backup API Management contents
 on:
   workflow_dispatch:
     inputs:
-      parameteFile:
-        type: string
-        default: "./arm-devenv.parameters.json"
+      targetEnvironment:
+        type: environment
 
 permissions:
   id-token: write
@@ -16,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: dev
     env:
-      PARAMETERS: ${{ github.event.inputs.parameteFile }}
+      PARAMETER_FILE: "armdeploy.${{ github.event.inputs.targetEnvironment }}.parameters.json"
     steps:
       - name: Login to Azure
         uses: azure/login@v1
@@ -29,7 +28,7 @@ jobs:
         uses: azure/powershell@v1
         with:
           inlineScript: |
-            $devparam = Get-Content $env:PARAMETERS | ConvertFrom-Json 
+            $devparam = Get-Content $env:PARAMETER_FILE | ConvertFrom-Json 
             $devStrAccName = $devparam.parameters.storageAccountName.value
             $bakContainer = $devparam.parameters.backupContainerName.value
             $devApimName = $devparam.parameters.apimServiceName.value
