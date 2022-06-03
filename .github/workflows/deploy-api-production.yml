@@ -67,6 +67,8 @@ jobs:
         uses: azure/powershell@v1
         with:
           inlineScript: |
+            echo "container name"
             echo $env:CONTAINER_NAME
+            echo "blob sas"
             echo $env:SAS_TOKEN
           azPSVersion: "latest"
