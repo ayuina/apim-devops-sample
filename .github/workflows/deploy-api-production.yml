@@ -28,8 +28,14 @@ jobs:
           inlineScript: |
             $para = (Get-Content ./echo-api-armdeploy.prod.parameters.json | ConvertFrom-Json ).parameters
 
+            $prodApimName = $para.apimServiceName.value
+            echo "PROD_APIMNAME=$prodApimName" >> $env:GITHUB_ENV
+
             $prodStrAccName = $para.storageAccountName.value
             echo "PROD_STRACCNAME=$prodStrAccName" >> $env:GITHUB_ENV
+
+            $bakContainer = $para.backupContainerName.value
+            echo "PROD_BAKCONTAINER=$bakContainer" >> $env:GITHUB_ENV
 
             $prodrg = (Get-AzStorageAccount | where { $_.StorageAccountName -eq $prodStrAccName })[0].ResourceGroupName
             echo "PROD_RG=$prodrg" >> $env:GITHUB_ENV
@@ -44,16 +50,14 @@ jobs:
             echo "CONTAINER_NAME=$containerName" >> $env:GITHUB_ENV
 
           azPSVersion: "latest"
-      # - name: 'Backup production API Management contents'
-      #   uses: azure/powershell@v1
-      #   with:
-      #     inlineScript: |
-      #       $para = (Get-Content ./armdeploy.prod.parameters.json | ConvertFrom-Json ).parameters
-      #       $prodStrAccName = $para.storageAccountName.value
-      #       $bakContainer = $para.backupContainerName.value
-      #       $prodApimName = $para.apimServiceName.value
-      #       .\ops-apim.ps1 -backup -storageAccountName $prodStrAccName -containerName $bakContainer -sourceapim $prodApimName
-      #     azPSVersion: "latest"
+
+      - name: 'Backup production API Management contents'
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+             .\ops-apim.ps1 -backup -sourceapim $env:PROD_APIMNAME `
+                -storageAccountName $env:PROD_STRACCNAME -containerName $env:PROD_BAKCONTAINER
+          azPSVersion: "latest"
 
       - name: 'Upload Blob contents'
         uses: azure/powershell@v1
@@ -74,8 +78,8 @@ jobs:
             | Format-Table
 
             Write-Host "generate container sas"
-            [DateTime]$exp = [DateTime]::UtcNow.AddDays(1)
-            $sastoken = New-AzStorageContainerSASToken -Context $strctx -Name $env:CONTAINER_NAME -Permission racwtl -ExpiryTime $exp
+            [DateTime]$exp = [DateTime]::UtcNow.AddMinutes(10)
+            $sastoken = New-AzStorageContainerSASToken -Context $strctx -Name $env:CONTAINER_NAME -Permission r -ExpiryTime $exp
             echo "SAS_TOKEN=$sastoken" >> $env:GITHUB_ENV
           azPSVersion: "latest"
 
