@@ -27,7 +27,7 @@
           "query": "subscription-key"
         },
         "apiRevision": "2",
-        "apiRevisionDescription": "devops demo revision",
+        "apiRevisionDescription": "add 1 operation",
         "subscriptionRequired": true,
         "displayName": "Echo API",
         "serviceUrl": "http://echoapi.cloudapp.net/api",
@@ -86,7 +86,6 @@
           "representations": [
             {
               "contentType": "application/json",
-              "sample": "{\r\n\t\"vehicleType\": \"train\",\r\n\t\"maxSpeed\": 125,\r\n\t\"avgSpeed\": 90,\r\n\t\"speedUnit\": \"mph\"\r\n}",
               "examples": {
                 "default": {
                   "value": "{\r\n\t\"vehicleType\": \"train\",\r\n\t\"maxSpeed\": 125,\r\n\t\"avgSpeed\": 90,\r\n\t\"speedUnit\": \"mph\"\r\n}"
@@ -107,14 +106,14 @@
     {
       "apiVersion": "2021-08-01",
       "type": "Microsoft.ApiManagement/service/apis/operations",
-      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=2/mock-response')]",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=2/hello')]",
       "dependsOn": [
         "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimServiceName'), 'echo-api;rev=2')]"
       ],
       "properties": {
-        "displayName": "Mock Response",
+        "displayName": "Hello",
         "method": "GET",
-        "urlTemplate": "/mock",
+        "urlTemplate": "/hello",
         "description": "",
         "templateParameters": [],
         "responses": [
@@ -124,11 +123,10 @@
             "representations": [
               {
                 "contentType": "application/json",
-                "sample": "{\r\n  \"message\": \"Hello\"\r\n}",
                 "examples": {
                   "default": {
                     "value": {
-                      "message": "Hello"
+                      "message": "Hello World !"
                     }
                   }
                 }
@@ -303,12 +301,12 @@
     {
       "apiVersion": "2021-08-01",
       "type": "Microsoft.ApiManagement/service/apis/operations/policies",
-      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=2/mock-response/policy')]",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=2/hello/policy')]",
       "dependsOn": [
-        "[resourceId('Microsoft.ApiManagement/service/apis/operations', parameters('apimServiceName'), 'echo-api;rev=2', 'mock-response')]"
+        "[resourceId('Microsoft.ApiManagement/service/apis/operations', parameters('apimServiceName'), 'echo-api;rev=2', 'hello')]"
       ],
       "properties": {
-        "value": "[concat(parameters('policyXMLBaseUrl'), 'echo-api;rev=2-mock-response-operationPolicy.xml', parameters('policyXMLSasToken'))]",
+        "value": "[concat(parameters('policyXMLBaseUrl'), 'echo-api;rev=2-hello-operationPolicy.xml', parameters('policyXMLSasToken'))]",
         "format": "rawxml-link"
       }
     },
@@ -333,6 +331,18 @@
       ],
       "properties": {
         "value": "[concat(parameters('policyXMLBaseUrl'), 'echo-api;rev=2-retrieve-resource-cached-operationPolicy.xml', parameters('policyXMLSasToken'))]",
+        "format": "rawxml-link"
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis/policies",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=2/policy')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimServiceName'), 'echo-api;rev=2')]"
+      ],
+      "properties": {
+        "value": "[concat(parameters('policyXMLBaseUrl'), 'echo-api;rev=2-apiPolicy.xml', parameters('policyXMLSasToken'))]",
         "format": "rawxml-link"
       }
     }

@@ -1,4 +1,4 @@
-# API Management DevOps サンプル
+# API Management の DevOps サンプル
 
 [Azure API Management DevOps resource kit](https://github.com/Azure/azure-api-management-devops-resource-kit) を使用した GitHub DevOps サンプルです。
 
@@ -32,7 +32,8 @@ New-AzResourceGroupDeployment -Name "apim-devenv" -ResourceGroupName $devrg -Tem
 ### API のバックアップ
 
 実際に API の構成などを始める前に、一度バックアップを取っておきます。
-パラメータは先の ARM テンプレートデプロイに使用したバラメータファイルに記載されているはずなので、そちらから取ってきます。、
+API Management 用の PowerShell スクリプト（[ops-apim.ps1](./ops-apim.ps1)）もサンプルに追加してありますので内容をご確認ください。
+スクリプトに渡すパラメータは先の ARM テンプレートデプロイに使用したバラメータファイルに記載されているはずなので、そちらから取ってきます。
 
 ```powershell
 $devparam = Get-Content ./armdeploy.dev.parameters.json | ConvertFrom-Json 
@@ -105,6 +106,107 @@ $config = [System.IO.Path]::GetFullPath(".\extract-echo-api.json")
         ...
 ```
 
+Hello API の場合 Revision 1 は API Management 生成時に自動生成されたものであるため、本番環境には追加した Revision 2 をデプロイすることになります。
+先ほどの例のように Hello Operation を追加したとすると、Revision 1 と 2 のディレクトリに含まれる ```basefilename-echo-api;rev=N-api.template.json``` というファイルを比較すると、以下の様な Azure リソースが確認できます（内容は抜粋したもの）。
+
+```json
+  "resources": [
+    // API の名前と apiRevision プロパティが 2 に設定されている
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=2')]",
+      "dependsOn": [],
+      "properties": {
+        "authenticationSettings": {
+          "subscriptionKeyRequired": false
+        },
+        "subscriptionKeyParameterNames": {
+          "header": "Ocp-Apim-Subscription-Key",
+          "query": "subscription-key"
+        },
+        "apiRevision": "2",
+        "apiRevisionDescription": "add 1 operation",
+        "subscriptionRequired": true,
+        "displayName": "Echo API",
+        "serviceUrl": "http://echoapi.cloudapp.net/api",
+        "path": "echo",
+        "protocols": [
+          "https"
+        ]
+      }
+    },
+    // Echo API のサブリソースとして Hello Operation が作成されている
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis/operations",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=2/hello')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimServiceName'), 'echo-api;rev=2')]"
+      ],
+      "properties": {
+        "displayName": "Hello",
+        "method": "GET",
+        "urlTemplate": "/hello",
+        "description": "",
+        "templateParameters": [],
+        "responses": [
+          {
+            "description": "",
+            "headers": [],
+            "representations": [
+              {
+                "contentType": "application/json",
+                "examples": {
+                  "default": {
+                    "value": {
+                      "message": "Hello World !"
+                    }
+                  }
+                }
+              }
+            ],
+            "statusCode": 200
+          }
+        ]
+      }
+    },
+    // Hello Operation のサブリソースとしてポリシー参照が設定されている
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis/operations/policies",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=2/hello/policy')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis/operations', parameters('apimServiceName'), 'echo-api;rev=2', 'hello')]"
+      ],
+      "properties": {
+        "value": "[concat(parameters('policyXMLBaseUrl'), 'echo-api;rev=2-hello-operationPolicy.xml', parameters('policyXMLSasToken'))]",
+        "format": "rawxml-link"
+      }
+    },
+```
+
+上記で参照されているポリシーファイル（policies ディレクトリ）を確認すると以下のようになっています。
+
+```xml
+<policies>
+  <inbound>
+    <base />
+    <mock-response status-code="200" content-type="application/json" />
+  </inbound>
+  <backend>
+    <base />
+  </backend>
+  <outbound>
+    <base />
+  </outbound>
+  <on-error>
+    <base />
+  </on-error>
+</policies>
+```
+
+
 ## 本番環境への展開
 
 それでは出力した API の定義を含んだ ARM Template を本番環境にデプロイしていきます。
@@ -113,14 +215,18 @@ $config = [System.IO.Path]::GetFullPath(".\extract-echo-api.json")
 
 Extractor が出力した各 API リビジョンのマスターテンプレート ```baseFilename-master.template.json``` には API Management そのものの定義が含まれていません。
 また API Management 以外のサービス、例えば ARM テンプレートデプロイ時にはマスターテンプレートからリンクされたテンプレートを保存するためのストレージアカウントなども含まれていません。
-Extractor が出力したマスターテンプレートを修正しすると、次に Extractor を実行した際に上書きされてしまうことになるので、これを呼び出すためのさらに上位のマスターテンプレートを作成することにします。
-サンプルは [armdeploy.prod.json](./armdeploy.prod.json) を参考にして下さい。
+Extractor が出力したマスターテンプレートを修正しすると、次に Extractor を実行した際に上書きされてしまうことになるので、これを呼び出すためのさらに上位のマスターテンプレートおよびテンプレートパラメータのファイルを作成することにします。
+このため Extractor が生成したテンプレートパラメータファイルは使用しません。
+
+![arm template structure](./images/arm-template-structure.png)
+
+サンプルは [armdeploy.prod.json](./armdeploy.prod.json) および [armdeploy.prod.parameters.json](./armdeploy.prod.parameters.json) を参考にして下さい。
 
 ### 本番環境用 API Management と Storage Account の作成
 
 マスターテンプレートが出来上がったら本番環境を構築します。
-サンプルのマスターテンプレートでは API Management および Storage Account サービスを定義してありますが、そこからリンクした（Extractor で出力した）API 定義のテンプレートに関しては、構築する API の名前 ```targetApiName``` やリビジョン ```targetApiRevision``` を指定しなければ動作しないようにしてあります。
-まだこの段階では Storage Account を作っていないため、リンクしたテンプレートをアップロードする先がないですし、SAS の生成も出来ないからです。
+なおサンプルのマスターテンプレートでは API Management および Storage Account サービスを定義してありますが、そこからリンクした（Extractor で出力した）API 定義のテンプレートに関しては、構築する API の名前 ```targetApiName``` やリビジョン ```targetApiRevision``` を指定しなければ動作しないようにしてあります。
+この段階ではまだ Storage Account を作っていないため、リンクしたテンプレートをアップロードする先がないですし、SAS の生成も出来ないからです。
 
 ```powershell
 $location = 'japaneast'
@@ -136,7 +242,7 @@ New-AzResourceGroupDeployment -Name "apim-prodenv" -ResourceGroupName $prodrg -T
 
 ### デプロイ前のバックアップ
 
-そのまえに本番環境もバックアップをとっておきましょう。
+API をデプロイする前にその前に本番環境 API Management も一度バックアップをとっておきましょう。
 
 ```powershell
 $prodparam =  Get-Content .\armdeploy.prod.parameters.json | ConvertFrom-Json
@@ -150,7 +256,7 @@ $prodApimName = $prodparam.parameters.apimServiceName.value
 ### リンクされたテンプレートのアップロード
 
 Storage Account が出来上がったら、Blob コンテナーを作成して SAS を発行、Extractor で出力しておいたテンプレート一式をアップロードしておきます。
-ここでは一回のAPIのデプロイのたびにコンテナを新規に作成することにしています。
+ここでは一回の API のデプロイのたびにコンテナを新規に作成することにしています。
 こうすることで過去にデプロイした API 定義が後で確認できるようにしています。
 
 ```powershell
@@ -159,7 +265,6 @@ $extractorConfig = (Get-Content $config | ConvertFrom-Json)
 $targetApi = $extractorConfig.apiName
 
 $targetRevision = '2'
-
 
 # create blob container
 $strAccKey = (Get-AzStorageAccountKey -ResourceGroupName $prodrg -Name $prodStrAccName)[0].Value
@@ -189,19 +294,78 @@ $sastoken = New-AzStorageContainerSASToken -Context $strctx -Name $containerName
 ```powershell
 $baseFileName = $extractorConfig.baseFileName
 
-New-AzResourceGroupDeployment -Name "api-$($containerName)" -ResourceGroupName $prodrg -TemplateFile .\arm-master.json `
-    -TemplateParameterFile .\arm-master.parameters.json `
+New-AzResourceGroupDeployment -Name "api-$($containerName)" -ResourceGroupName $prodrg -TemplateFile .\armdeploy.prod.json `
+    -TemplateParameterFile .\armdeploy.prod.parameters.json `
     -linkedTemplateContainerName $containerName -storageSasToken $sastoken -baseFileName $baseFileName `
     -targetApiName $targetApi -targetApiRevision $targetRevision
 ```
 
-### #################################################
+デプロイが完了したら Azure Portal で本番環境の API Management を参照すると、Echo API に Revision 2 が追加され Hello Operation が作成されているはずです。
+最後の動作確認をして問題なければ、現在の Revision を 2 に設定すれば本番環境への反映が完成します。
 
-revision がついてないAPIの修正
-isCurrentをfalse に
+![activate rev2](./images/activate-rev2.png)
+
+これで一連の作業の流れが確認できました。
+初回の API Management 作成作業が終わっていますので、以降は以下の手順で API の開発とデプロイを行うことになります。
+
+- 開発環境
+    - 作業開始前に API Management をバックアップ
+    - 新しい Revision を作成して API を編集
+    - Resource Kit の Extractor を使用して ARM テンプレートを出力
+- 本番環境
+    - 作業開始前に API Management をバックアップ
+    - ARM テンプレートをデプロイ
+    - 動作確認をして正常なら Revision を切り替え
+
+### 補足：Revsision の切り替え
+
+ARM テンプレートを使用して API をデプロイする場合、Current Revision を変更することができません。
+例えばこのケースでは本番環境で Echo API は Current Revision が "1" になっているのですが、Revision 2 の Echo
+ API を isCurrent = true としてデプロイするとエラーが発生します。
+このため前述のように API をデプロイした後に手動で Revision の切り替えを行っています。
+とはいえ本番環境でいきなり Revision が切り替わると予期せぬエラーが発生したときに大問題になりますので、
+ここでやっているように最終チェック後に切り替えをする手順の方が適切だと考えます。
+
+### 補足：API Management のリストア
+
+開発環境や本番環境で作業している際にうっかり API Management の設定内容を壊してしまうのでやり直したい場合もあるでしょう。
+その場合は適宜取っておいたバックアップデータをリストアすれば元の状態に戻せます。
+サンプルの（[ops-apim.ps1](./ops-apim.ps1)）にはリストア用の処理も実装してありますので、内容はそちらをご確認ください。
+各環境のストレージアカウントには Blob としてバックアップデータが保存されていますので、そのファイル名を使用して以下のようにリストアが可能です。
+
+```powershell
+$prodparam =  Get-Content .\armdeploy.prod.parameters.json | ConvertFrom-Json
+$prodStrAccName = $prodparam.parameters.storageAccountName.value
+$bakContainer = $prodparam.parameters.backupContainerName.value
+$prodApimName = $prodparam.parameters.apimServiceName.value
+
+.\ops-apim.ps1 -restore -storageAccountName $prodStrAccName -containerName $bakContainer -targetapim $prodApimName `
+    -restoreblob 'ayuina-apim-prod_2022-06-03-03-27-07.apimbackup'
+```
 
 
 # GitHub Actions を使用した DevOps 編
+
+さて一連の作業の流れが確認出来たので、ここからは Github Actions を使用して自動化していきます。
+（ここまで作業内容は一度 main ブランチにマージしておいてください。）
+
+## ブランチと環境の相互作用
+
+Resource Kit ではリポジトリのフォークを使用した開発フローを想定しているようでしたが、本サンプルでは少し簡単に単一リポジトリ内でのブランチで制御していきたいと思います。
+
+![api management devops flow](./images/apim-devops-flow.png)
+
+自動化する内容とイベントを整理していくと以下のようになるでしょうか。
+
+|イベント|GitHub Actionsトリガー|処理内容|補足|
+|---|---|---|---|
+|開発作業の開始|workflow_dispatch|開発環境の API Management の全 API 設定をバックアップ|作業開始のタイミングで手動実行|
+|本番環境への移送|pull_request|本番環境の API Management へ開発した API 設定をデプロイ|開発作業が終わったら main ブランチへ Pull Request を出す|
+|本番環境で稼働開始|push|デプロイした API の Current Revision を切り替え|テストとレビューの結果、無事に main へマージされたら本番反映する|
+
+### Azure
+
+### 開発環境の API Management のバックアップ
 
 Github Actions を使用してバックアップするための[ワークフロー](./.github/workflows/backup-apim.yml)を使用することもできます。
 こちらを使用する場合はワークフローが Azure サブスクリプションにアクセスできる必要があります。
