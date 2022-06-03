@@ -45,7 +45,6 @@ jobs:
 
             Write-Host "Creating container"
             $strAccKey = (Get-AzStorageAccountKey -ResourceGroupName $prodrg -Name $prodStrAccName)[0].Value
-            echo $strAccKey
 
             $strctx = New-AzStorageContext -StorageAccountName $prodStrAccName -StorageAccountKey $strAccKey
             $containerName = [DateTime]::Now.ToString("yyyyMMdd-HHmmss")
@@ -53,6 +52,7 @@ jobs:
 
             $container = New-AzStorageContainer -Context $strctx -Name $containerName
             echo "CONTAINER_NAME=$containerName" >> $env:GITHUB_ENV
+            Get-AzStorageContainer -Context $strctx
 
             Write-Host "Upload linked template"
             $templateRoot = ".\{0}\{0};rev={1}"  -f $targetApi, $targetRevision
