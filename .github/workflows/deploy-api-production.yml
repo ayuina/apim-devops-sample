@@ -45,9 +45,10 @@ jobs:
 
             Write-Host "Creating container"
             $strAccKey = (Get-AzStorageAccountKey -ResourceGroupName $prodrg -Name $prodStrAccName)[0].Value
+            echo $strAccKey
 
             $strctx = New-AzStorageContext -StorageAccountName $prodStrAccName -StorageAccountKey $strAccKey
-            $containerName = [DateTime]::Now.ToString("yyyyMMdd-HHmmss")
+            $containerName = [DateTime]::Now.ToString("yyyyMMdd_HHmmss")
             echo $containerName
 
             $container = New-AzStorageContainer -Context $strctx -Name $containerName
@@ -57,8 +58,8 @@ jobs:
             Write-Host "generate container sas"
             [DateTime]$exp = [DateTime]::UtcNow.AddDays(1)
             $sastoken = New-AzStorageContainerSASToken -Context $strctx -Name $containerName -Permission racwtl -ExpiryTime $exp
-            echo $sastoken
             echo "SAS_TOKEN=$sastoken" >> $env:GITHUB_ENV
+            echo $sastoken
 
             Write-Host "Upload linked template"
             $templateRoot = ".\{0}\{0};rev={1}"  -f $targetApi, $targetRevision
