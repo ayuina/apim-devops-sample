@@ -52,6 +52,8 @@ API Management が出来上がると Echo API も作られているはずです�
 Echo API に何らかの機能追加をしておいてください。
 Mock 応答を返すなど簡単なもので大丈夫です。
 
+![hello api rev2](./images/add-rev2.png)
+
 ### API 定義の展開 
 
 API Management で管理する API を Azure Portal 等を使用して開発・テストしたら、各 API の設定内容を ARM テンプレートとして展開、ソースコードとして管理できるようにしていきます。
@@ -61,7 +63,7 @@ API Management で管理する API を Azure Portal 等を使用して開発・�
 
 ```powershell
 # download resource kit
-$reskitVersion = '1.0.0-beta.4'
+$reskitVersion = '1.0.0-beta.5'
 $reskiturl = "https://github.com/Azure/azure-api-management-devops-resource-kit/releases/download/$($reskitVersion)/reskit-$($reskitVersion).zip"
 $zipfile = "reskit.zip"
 Invoke-WebRequest -Uri $reskiturl -OutFile $zipfile
