@@ -45,8 +45,12 @@ jobs:
 
             Write-Host "Creating container"
             $strAccKey = (Get-AzStorageAccountKey -ResourceGroupName $prodrg -Name $prodStrAccName)[0].Value
+            eho $strAccKey
+
             $strctx = New-AzStorageContext -StorageAccountName $prodStrAccName -StorageAccountKey $strAccKey
             $containerName = [DateTime]::Now.ToString("yyyyMMdd-HHmmss")
+            echo $containerName
+            
             $container = New-AzStorageContainer -Context $strctx -Name $containerName
             echo "CONTAINER_NAME=$containerName" >> $env:GITHUB_ENV
 
