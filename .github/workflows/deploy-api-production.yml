@@ -48,7 +48,7 @@ jobs:
             echo $strAccKey
 
             $strctx = New-AzStorageContext -StorageAccountName $prodStrAccName -StorageAccountKey $strAccKey
-            $containerName = [DateTime]::Now.ToString("yyyyMMdd_HHmmss")
+            $containerName = [DateTime]::Now.ToString("yyyyMMddHHmmss")
             echo $containerName
 
             $container = New-AzStorageContainer -Context $strctx -Name $containerName
