@@ -1,6 +1,6 @@
 {
-    "resourceGroup": "source-apim-resource-group",
-    "sourceApimName" : "apim-name-export-from",
+    "resourceGroup": "apim-dev-rg",
+    "sourceApimName" : "ayuina-apim-dev",
     "destinationApimName": "apim-name-import-to-dummy",
     "fileFolder" : "./echo-api",
 

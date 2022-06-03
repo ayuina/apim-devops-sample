@@ -17,33 +17,40 @@ git checkout dev
 ### 開発環境の準備
 
 まずは開発作業用の API Management を準備します。
-ここでは ARM Template([arm-devenv.json](./arm-devenv.json)) を使用して、API Management と構成のバックアップ用のストレージアカウントを構築しています。
+ここでは ARM Template([arm-devenv.json](./arm-devenv.json)) を使用して、API Management と構成のバックアップ用の Storage Account を構築しています。
+API Management や Storage Account はユニークな名前が必要になりますのでパラメータファイル（[arm-devenv.parameters.json](./arm-devenv.parameters.json)）は書き換えて使ってください。
 
 ```powershell
 $location = 'japaneast'
-$devrg = 'apim-demo-dev-rg'
-$devApimName = 'your-dev-apim-name'
-$devStrAccName = 'yourdevapimstragename'
-$bakContainer = 'apim-backup'
+$devrg = 'apim-dev-rg'
 
 New-AzResourceGroup -Name $devrg -Location $location
 New-AzResourceGroupDeployment -Name "apim-devenv" -ResourceGroupName $devrg -TemplateFile .\arm-devenv.json `
-    -location $location -storageAccountName $devStrAccName -backupContainerName $bakContainer -apimServiceName $devApimName
+    -TemplateParameterFile .\arm-devenv.parameters.json
 ```
+
+### API のバックアップ
+
+実際に API の構成などを始める前に、一度バックアップを取っておきます。
+パラメータは先の ARM テンプレートデプロイに使用したバラメータファイルに記載されているはずなので、そちらから取ってきます。、
+
+```powershell
+$devparam = Get-Content .\arm-devenv.parameters.json | ConvertFrom-Json 
+$devStrAccName = $devparam.parameters.storageAccountName.value
+$bakContainer = $devparam.parameters.backupContainerName.value
+$devApimName = $devparam.parameters.apimServiceName.value
+
+.\ops-apim.ps1 -backup -storageAccountName $devStrAccName -containerName $bakContainer -sourceapim $devApimName
+```
+
+これ以降も API の作成や編集作業を勧める中で適宜バックアップを取っておくことをお勧めします。
+
+### API の構成
 
 API Management が出来上がると Echo API も作られているはずです。
 このままではあまり意味がないので、[こちら](https://docs.microsoft.com/ja-jp/azure/api-management/api-management-get-started-revise-api?tabs=azure-portal) などを参考に Revision 2 を追加し、
 Echo API に何らかの機能追加をしておいてください。
 Mock 応答を返すなど簡単なもので大丈夫です。
-
-### API のバックアップ
-
-実際に API の構成などを始める前に、一度バックアップを取っておきます。
-これ以降も API の作成や編集作業を勧める中で適宜バックアップを取っておくことをお勧めします。
-
-```powershell
-.\ops-apim.ps1 -backup -storageAccountName $devStrAccName -containerName $bakContainer -sourceapim $devApimName
-```
 
 ### API 定義の展開 
 
@@ -115,13 +122,11 @@ Extractor が出力したマスターテンプレートを修正しすると、�
 
 ```powershell
 $location = 'japaneast'
-$prodrg = 'apim-demo-prod-rg'
-$prodApimName = 'your-prod-apim-name'
-$prodStrAccName = 'yourprodapimstragename'
+$prodrg = 'apim-prod-rg'
 
 New-AzResourceGroup -Name $prodrg -Location $location
 New-AzResourceGroupDeployment -Name "apim-prodenv" -ResourceGroupName $prodrg -TemplateFile .\arm-master.json `
-    -location $location -storageAccountName $prodStrAccName -apimServiceName $prodApimName
+    -TemplateParameterFile .\arm-master.parameters.json
 ```
 
 こちらの展開が終わると本番環境の API Management でも Echo API の Revision 1 が出来上がっているはずです。
@@ -134,8 +139,14 @@ Storage Account が出来上がったら、Blob コンテナーを作成して S
 こうすることで過去にデプロイした API 定義が後で確認できるようにしています。
 
 ```powershell
-$targetApi = 'echo-api'
+#Extractor 構成ファイルで指定した値から値を利用
+$extractorConfig = (Get-Content $config | ConvertFrom-Json)
+$targetApi = $extractorConfig.apiName
+
 $targetRevision = '2'
+
+$prodparam =  Get-Content .\arm-master.parameters.json | ConvertFrom-Json
+$prodStrAccName = $prodparam.parameters.storageAccountName.value
 
 # create blob container
 $strAccKey = (Get-AzStorageAccountKey -ResourceGroupName $prodrg -Name $prodStrAccName)[0].Value
@@ -159,17 +170,14 @@ $sastoken = New-AzStorageContainerSASToken -Context $strctx -Name $containerName
 
 ### API 定義のデプロイ
 
-もう一度マスターテンプレートをデプロイしますが、今度はパラメタが多くなってきます。
+もう一度マスターテンプレートをデプロイします。
+今度はパラメタファイルに加えて、対象 API の情報やそのテンプレートをアップロードした Blob コンテナの情報を追加しています。
 
 ```powershell
-$location = 'japaneast'
-$prodrg = 'apim-demo-prod-rg'
-$prodApimName = 'your-prod-apim-name'
-$prodStrAccName = 'yourprodapimstragename'
-$baseFileName = 'apiconfig' #Extractor 構成ファイルで指定した値
+$baseFileName = $extractorConfig.baseFileName
 
 New-AzResourceGroupDeployment -Name "api-$($containerName)" -ResourceGroupName $prodrg -TemplateFile .\arm-master.json `
-    -location $location -storageAccountName $prodStrAccName -apimServiceName $prodApimName `
+    -TemplateParameterFile .\arm-master.parameters.json `
     -linkedTemplateContainerName $containerName -storageSasToken $sastoken -baseFileName $baseFileName `
     -targetApiName $targetApi -targetApiRevision $targetRevision
 ```

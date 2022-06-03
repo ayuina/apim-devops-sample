@@ -3,15 +3,9 @@ name: Backup API Management contents
 on:
   workflow_dispatch:
     inputs:
-      apiManagement:
+      parameteFile:
         type: string
-        default: demo-apim-dev
-      storageAccount:
-        type: string
-        default: demoapimdevstr
-      storageContainer:
-        type: string
-        default: apim-backup
+        default: "./arm-devenv.parameters.json"
 
 permissions:
   id-token: write
@@ -22,9 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: dev
     env:
-      TARGET_APIMAN: ${{ github.event.inputs.apiManagement }}
-      TARGET_STRACCOUNT: ${{ github.event.inputs.storageAccount }}
-      TARGET_CONTAINER: ${{ github.event.inputs.storageContainer }}
+      PARAMETERS: ${{ github.event.inputs.parameteFile }}
     steps:
       - name: Login to Azure
         uses: azure/login@v1
@@ -37,13 +29,9 @@ jobs:
         uses: azure/powershell@v1
         with:
           inlineScript: |
-            $blobfile = "{0}_{1:yyyy-MM-dd-HH-mm-ss}.apimbackup" -f $env:TARGET_APIMAN, [DateTime]::UtcNow
-            Write-host ("Backup API Management {0} to https://{1}.blob.core.windows.net/{2}/{3}" -f $env:TARGET_APIMAN, $env:TARGET_STRACCOUNT, $env:TARGET_CONTAINER, $blobfile)
-
-            $bakstr = (Get-AzStorageAccount | where { $_.StorageAccountName -eq $env:TARGET_STRACCOUNT })[0]
-            $strkey = (Get-AzStorageAccountKey -ResourceGroupName $bakstr.ResourceGroupName -AccountName $bakstr.StorageAccountName)[0].Value
-            $strctx = New-AzStorageContext -StorageAccountName $env:TARGET_STRACCOUNT -StorageAccountKey $strkey
-            $apiman = (Get-AzApiManagement | where {$_.Name -eq $env:TARGET_APIMAN})[0]
-            Backup-AzApiManagement -ResourceGroupName $apiman.ResourceGroupName -Name $apiman.Name `
-              -StorageContext $strctx -TargetContainerName  $env:TARGET_CONTAINER -TargetBlobName $blobfile
+            $devparam = Get-Content $env:PARAMETERS | ConvertFrom-Json 
+            $devStrAccName = $devparam.parameters.storageAccountName.value
+            $bakContainer = $devparam.parameters.backupContainerName.value
+            $devApimName = $devparam.parameters.apimServiceName.value
+            .\ops-apim.ps1 -backup -storageAccountName $devStrAccName -containerName $bakContainer -sourceapim $devApimName
           azPSVersion: "latest"
