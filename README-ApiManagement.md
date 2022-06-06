@@ -26,7 +26,6 @@ API Management には[バックアップとリストア](https://docs.microsoft.
 ### 開発環境でのうっかりミスは本番環境にも反映される
 
 まずは当たり前といえば当たり前なのですが「開発環境でのうっかりミスまで本番環境に反映されてしまう」ことでしょうか。
-新し
 そもそもこのうっかりミスで本番障害を起こさないために CI/CD したいわけですから、あまり改善になっていません。
 もちろん通常はテスト環境などにデプロイして「テストが通ったら本番環境に適用」というプロセスがあると思いますので、実害は無いのかもしれませんが。
 
@@ -68,7 +67,7 @@ API Management には担当部署も背景もライフサイクルも異なる�
 API Management には [Git を使用した構成管理](https://docs.microsoft.com/ja-jp/azure/api-management/api-management-configuration-repository-git) の機能が提供されています。
 Git なら差分も取れますし前述のバックアップ・リストアよりもホワイトボックスに扱えそうですよね。
 
-が、こちらも実は問題がありました。
+が、こちらも問題がありました。
 ローカルに git clone したディレクトリ構造を開いて見たのが下図になるのですが、良くわからない参照 ID のようなモノがそこら中にちりばめられています。
 正直どこを修正すれば何ができるのか全く分からず、数分で心が折れました。
 一応上記のドキュメントに内容の解説もついてはいるのですが。
@@ -192,9 +191,9 @@ API Management は他の Azure リソースと同様に ARM テンプレート�
 
 ![ARM definition of API Management](./images/apim-arm-definition.png)
 
-ARM テンプレートによる API の定義が難解ではないとかは口が裂けても言えませんが、少なくとも API Management の Git リポジトリよりは経験者が多いのではないかと思います。
-ただ ARM で管理されているということは[ちゃんとリファレンスがあります](https://docs.microsoft.com/ja-jp/azure/templates/microsoft.apimanagement/service)。
-もちろん読んで理解できるとしても、保守できるか否かはまた別の話だと思います。
+ARM テンプレートによる API の定義が難解ではないとかは口が裂けても言えませんが、少なくとも API Management の Git リポジトリベースの保守の経験者よりは、Azure で一般的に利用できる ARM Template の経験者の多いのではないかと思います。
+そしてなにより ARM で管理されているということは[ちゃんとリファレンスがあります](https://docs.microsoft.com/ja-jp/azure/templates/microsoft.apimanagement/service)。
+もちろん読んで理解できるとしても、保守できるか否かはまた別の話です。
 
 ### API Management DevOps Resource Kit が使えそう？
 
@@ -226,9 +225,8 @@ Creator 側のルートは本物の API Management が無くても開発作業�
 ### 定まったお作法はない
 
 Extractor も Creator も .NET 6 で作られた単なるコマンドラインツールなので、それ以外は Resource Kit 的にはオプションと考えてよいと思います。
-図のようにオリジナルから fork した別リポジトリで開発して Pull Request を出しても良いですし、単一リポジトリでブランチ管理してもシンプルで良いように思います。
-CI/CD パイプラインもサンプルには Azure DevOps が採用されていますが、PowerShell などでスクリプト化して手元で実行しても良いですし、GitHub Actions でもできるはず。
-
+図のようにオリジナルから fork した別リポジトリで開発して Pull Request を出しても良いですし、単一リポジトリでブランチ管理するのもシンプルで良いように思います。
+CI/CD パイプラインも Resource Kit 付随のサンプルには Azure DevOps Pipeline が紹介されていますが、ココは ARM Template デプロイさえ出来ればいいので、PowerShell などでスクリプト化して実行しても良いですし、GitHub Actions でもできるはずです。
 
 ## 前置き終わり
 
