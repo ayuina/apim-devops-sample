@@ -138,4 +138,10 @@ main ブランチへ Pull Request を作成すると、下記のようにワー�
 追加された Revision の動作を確認し、これを本番化して良いのであれば、Pull Request を main ブランチへマージします。
 このためここの処理のワークフローは main ブランチへの push トリガーで起動します。
 サンプルは [switch-api-revision.yml](./.github/workflows/switch-api-revision.yml) になります。
+処理内容的には PowerShell 編で紹介していませんが、基本的には [New-AzApiManagementApiRelease](https://docs.microsoft.com/en-us/powershell/module/az.apimanagement/new-azapimanagementapirelease?view=azps-8.0.0) を呼び出すだけです。
+新しい Revision を指定した Release を作成することで、Current Revision が切り替わります。
+
+
+
+## まとめ
 
