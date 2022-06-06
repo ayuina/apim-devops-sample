@@ -1,0 +1,113 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "apimServiceName": {
+      "type": "string"
+    },
+    "policyXMLBaseUrl": {
+      "type": "string"
+    },
+    "policyXMLSasToken": {
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=6')]",
+      "dependsOn": [],
+      "properties": {
+        "authenticationSettings": {
+          "subscriptionKeyRequired": false
+        },
+        "subscriptionKeyParameterNames": {
+          "header": "Ocp-Apim-Subscription-Key",
+          "query": "subscription-key"
+        },
+        "apiRevision": "6",
+        "apiRevisionDescription": "Full CiCD Demo",
+        "subscriptionRequired": true,
+        "displayName": "Echo API",
+        "serviceUrl": "http://echoapi.cloudapp.net/api",
+        "path": "echo",
+        "protocols": [
+          "https"
+        ]
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/products/apis",
+      "name": "[concat(parameters('apimServiceName'), '/starter/echo-api;rev=6')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimServiceName'), 'echo-api;rev=6')]"
+      ],
+      "properties": {
+        "displayName": "Starter",
+        "description": "Subscribers will be able to run 5 calls/minute up to a maximum of 100 calls/week.",
+        "subscriptionRequired": true,
+        "approvalRequired": false,
+        "state": "published"
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/products/apis",
+      "name": "[concat(parameters('apimServiceName'), '/unlimited/echo-api;rev=6')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/products/apis', parameters('apimServiceName'), 'starter', 'echo-api;rev=6')]"
+      ],
+      "properties": {
+        "displayName": "Unlimited",
+        "description": "Subscribers have completely unlimited access to the API. Administrator approval is required.",
+        "subscriptionRequired": true,
+        "approvalRequired": true,
+        "state": "published"
+      }
+    },
+    {
+      "apiVersion": "2021-08-01",
+      "type": "Microsoft.ApiManagement/service/apis/operations",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=6/retrieve-resource')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimServiceName'), 'echo-api;rev=6')]"
+      ],
+      "properties": {
+        "displayName": "Retrieve resource",
+        "method": "GET",
+        "urlTemplate": "/resource",
+        "description": "A demonstration of a GET call on a sample resource. It is handled by an \"echo\" backend which returns a response equal to the request (the supplied headers and body are being returned as received).",
+        "templateParameters": [],
+        "request": {
+          "headers": [],
+          "queryParameters": [
+            {
+              "defaultValue": "sample",
+              "description": "A sample parameter that is required and has a default value of \"sample\".",
+              "name": "param1",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "description": "Another sample parameter, set to not required.",
+              "name": "param2",
+              "required": false,
+              "type": "number"
+            }
+          ],
+          "representations": []
+        },
+        "responses": [
+          {
+            "description": "Returned in all cases.",
+            "headers": [],
+            "representations": [],
+            "statusCode": 200
+          }
+        ]
+      }
+    }
+  ]
+}
