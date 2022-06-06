@@ -1,0 +1,44 @@
+name: Switch API Revision to current
+
+on: 
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'echo-api-armdeploy.prod.parameters.json'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+    environment: prod
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }} 
+          enable-AzPSSession: true
+
+      - name: Switch Revision
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $para = (Get-Content ./echo-api-armdeploy.prod.parameters.json | ConvertFrom-Json ).parameters
+            $prodApimName = $para.apimServiceName.value
+            $targetApi = $para.targetApiName.value
+            $targetRevision = $para.targetApiRevision.value
+
+            $prodrg = (Get-AzApiManagement  | where { $_.Name -eq 'ayuina-apim-prod' })[0].ResourceGroupName
+            $apimctx = New-AzApiManagementContext -ResourceGroupName $prodrg -ServiceName 'ayuina-apim-prod'
+            $note = "Switching $targetApi current revision to $targetApiRevision"
+            New-AzApiManagementApiRelease -Context $apimctx -ApiId $targetApi -ApiRevision targetApiRevision -Note $note
+          azPSVersion: "latest"
+
