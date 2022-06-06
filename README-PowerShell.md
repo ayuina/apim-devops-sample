@@ -1,8 +1,7 @@
 # Azure PowerShell 編
 
 最終的には [GitHub Actions を使用した自動化](./README-GitHubActions.md)を目指しますが、
-まずはサンプルの解説も兼ねて PowerShell スクリプトで一連の流れを解説していきます。
-
+まずは API Template や Resource Kit の解説も兼ねて PowerShell スクリプトで一連の流れを紹介していきます。
 
 # API Management を利用した API の開発
 

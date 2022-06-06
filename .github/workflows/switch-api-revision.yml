@@ -36,8 +36,8 @@ jobs:
             $targetApi = $para.targetApiName.value
             $targetRevision = $para.targetApiRevision.value
 
-            $prodrg = (Get-AzApiManagement  | where { $_.Name -eq 'ayuina-apim-prod' })[0].ResourceGroupName
-            $apimctx = New-AzApiManagementContext -ResourceGroupName $prodrg -ServiceName 'ayuina-apim-prod'
+            $prodrg = (Get-AzApiManagement  | where { $_.Name -eq $prodApimName })[0].ResourceGroupName
+            $apimctx = New-AzApiManagementContext -ResourceGroupName $prodrg -ServiceName $prodApimName
             $note = "Switching $targetApi current revision to $targetApiRevision"
             New-AzApiManagementApiRelease -Context $apimctx -ApiId $targetApi -ApiRevision targetApiRevision -Note $note
           azPSVersion: "latest"
