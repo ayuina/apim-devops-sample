@@ -37,7 +37,7 @@ Resource Kit ではリポジトリのフォークを使用した開発フロー�
 
 ## 開発作業の開始
 
-Github Actions を使用してバックアップするためのワークフローは[こちら](./.github/workflows/backup-apim.yml)にサンプル置いてあります。
+Github Actions を使用したワークフローは[こちら](./.github/workflows/backup-apim.yml)にサンプルが置いてあります。
 基本的に PowerShell 編で紹介したスクリプトファイルを実行するだけですね。
 このワークフローの手動実行時に GitHub Environment を指定できるようになっており、選択した Environment 名を含むパラメータファイルを読み込むようになっています。
 
@@ -49,5 +49,10 @@ Github Actions を使用してバックアップするためのワークフロ�
 - Azure AD アプリケーションの信頼するエンティティとして ```dev``` 環境を追加
 - API Management に対して必要な権限を持つ共同作成者などのロールを Azure AD アプリケーションを割り当てる
 
-### 本番環境へ移送
+## 本番環境へ移送
 
+Github Actions を使用したワークフローは[こちら](./.github/workflows/deploy-api-production.yml)にサンプルが置いてあります。
+こちらは PowerShell 編で紹介したスクリプトの内容を YAML の中にインラインスクリプトで実装しています。
+
+
+## 本番稼働
