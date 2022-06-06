@@ -39,6 +39,6 @@ jobs:
             $prodrg = (Get-AzApiManagement  | where { $_.Name -eq $prodApimName })[0].ResourceGroupName
             $apimctx = New-AzApiManagementContext -ResourceGroupName $prodrg -ServiceName $prodApimName
             $note = "Switching $targetApi current revision to $targetApiRevision"
-            New-AzApiManagementApiRelease -Context $apimctx -ApiId $targetApi -ApiRevision targetApiRevision -Note $note
+            New-AzApiManagementApiRelease -Context $apimctx -ApiId $targetApi -ApiRevision $targetApiRevision -Note $note
           azPSVersion: "latest"
 
