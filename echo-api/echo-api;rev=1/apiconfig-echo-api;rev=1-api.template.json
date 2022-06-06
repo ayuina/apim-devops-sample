@@ -16,7 +16,7 @@
     {
       "apiVersion": "2021-08-01",
       "type": "Microsoft.ApiManagement/service/apis",
-      "name": "[concat(parameters('apimServiceName'), '/echo-api')]",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=1')]",
       "dependsOn": [],
       "properties": {
         "authenticationSettings": {
@@ -27,7 +27,6 @@
           "query": "subscription-key"
         },
         "apiRevision": "1",
-        "isCurrent": true,
         "subscriptionRequired": true,
         "displayName": "Echo API",
         "serviceUrl": "http://echoapi.cloudapp.net/api",

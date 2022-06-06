@@ -27,8 +27,7 @@
       "value": "echo-api"
     },
     "targetApiRevision": {
-      "value": "5"
+      "value": "6"
     }
-    
   }
 }

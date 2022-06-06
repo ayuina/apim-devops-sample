@@ -16,7 +16,7 @@
     {
       "apiVersion": "2021-08-01",
       "type": "Microsoft.ApiManagement/service/apis",
-      "name": "[concat(parameters('apimServiceName'), '/echo-api;rev=4')]",
+      "name": "[concat(parameters('apimServiceName'), '/echo-api')]",
       "dependsOn": [],
       "properties": {
         "authenticationSettings": {
@@ -27,6 +27,7 @@
           "query": "subscription-key"
         },
         "apiRevision": "4",
+        "isCurrent": true,
         "apiRevisionDescription": "workflow",
         "subscriptionRequired": true,
         "displayName": "Echo API",
